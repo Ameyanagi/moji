@@ -13,3 +13,10 @@ from .conversion import (
     floor_utf8_boundary,
 )
 from .position import ByteOffset, CodePointIndex, DisplayColumn, GraphemeIndex
+from .width import (
+    UNICODE_DATA_VERSION,
+    AmbiguousWidth,
+    grapheme_width,
+    scalar_width,
+    text_width,
+)
