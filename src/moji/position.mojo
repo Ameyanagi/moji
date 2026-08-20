@@ -1,6 +1,11 @@
 """Nominal nonnegative coordinate values for text APIs."""
 
 
+struct _Validated:
+    def __init__(out self):
+        pass
+
+
 def _validate_nonnegative(value: Int, unit: String) raises:
     if value < 0:
         raise Error(unit + " must be nonnegative")
@@ -20,6 +25,14 @@ struct ByteOffset(Copyable, Equatable):
 
     def __init__(out self, value: Int) raises:
         _validate_nonnegative(value, "byte offset")
+        self._value = value
+
+    @staticmethod
+    def _from_validated(value: Int) -> Self:
+        """Construct a byte offset whose nonnegative value is already trusted."""
+        return Self(value, _validated=_Validated())
+
+    def __init__(out self, value: Int, *, _validated: _Validated):
         self._value = value
 
     def validate(self) raises:
@@ -59,6 +72,14 @@ struct CodePointIndex(Copyable, Equatable):
 
     def __init__(out self, value: Int) raises:
         _validate_nonnegative(value, "code-point index")
+        self._value = value
+
+    @staticmethod
+    def _from_validated(value: Int) -> Self:
+        """Construct a code-point index whose value is already trusted."""
+        return Self(value, _validated=_Validated())
+
+    def __init__(out self, value: Int, *, _validated: _Validated):
         self._value = value
 
     def validate(self) raises:
