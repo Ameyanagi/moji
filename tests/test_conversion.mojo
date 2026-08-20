@@ -1,12 +1,15 @@
 from moji import (
     ByteOffset,
+    ByteRange,
     CodePointIndex,
     byte_offset_of,
+    byte_ranges_of_code_points,
     code_point_index,
     count_code_points,
     floor_utf8_boundary,
 )
-from std.testing import TestSuite, assert_equal, assert_raises
+from std.collections import List
+from std.testing import TestSuite, assert_equal, assert_raises, assert_true
 
 
 def test_count_code_points_handles_ascii_cjk_and_emoji() raises:
@@ -72,6 +75,66 @@ def test_floor_utf8_boundary_is_total() raises:
     assert_equal(floor_utf8_boundary(text, 4).value(), 3)
     assert_equal(floor_utf8_boundary(text, 9).value(), 6)
     assert_equal(floor_utf8_boundary(text, 3).value(), 3)
+
+
+def test_code_point_positions_merge_consecutive_runs() raises:
+    var positions: List[Int] = [1, 2, 4, 5]
+    var ranges = byte_ranges_of_code_points("a北京b🇯🇵c", positions)
+    assert_equal(len(ranges), 2)
+    assert_true(ranges[0] == ByteRange(1, 7))
+    assert_true(ranges[1] == ByteRange(8, 16))
+
+
+def test_code_point_positions_handles_single_all_and_empty_spans() raises:
+    var single: List[Int] = [2]
+    var single_ranges = byte_ranges_of_code_points("a北京b🇯🇵c", single)
+    assert_equal(len(single_ranges), 1)
+    assert_true(single_ranges[0] == ByteRange(4, 7))
+
+    var all: List[Int] = [0, 1, 2, 3, 4, 5, 6]
+    var all_ranges = byte_ranges_of_code_points("a北京b🇯🇵c", all)
+    assert_equal(len(all_ranges), 1)
+    assert_true(all_ranges[0] == ByteRange(0, 17))
+
+    var empty = List[Int]()
+    var empty_ranges = byte_ranges_of_code_points("a北京b🇯🇵c", empty)
+    assert_equal(len(empty_ranges), 0)
+
+
+def test_code_point_positions_rejects_decreasing_pair() raises:
+    var positions: List[Int] = [1, 4, 3]
+    with assert_raises(
+        contains=(
+            "code-point positions must be strictly increasing: positions 1 "
+            "and 2 contain 4 and 3"
+        )
+    ):
+        _ = byte_ranges_of_code_points("abcdef", positions)
+
+
+def test_code_point_positions_rejects_repeated_pair() raises:
+    var positions: List[Int] = [1, 1]
+    with assert_raises(
+        contains=(
+            "code-point positions must be strictly increasing: positions 0 "
+            "and 1 contain 1 and 1"
+        )
+    ):
+        _ = byte_ranges_of_code_points("abcdef", positions)
+
+
+def test_code_point_positions_rejects_negative_and_out_of_range() raises:
+    var negative: List[Int] = [-1]
+    with assert_raises(
+        contains="code-point index -1 at position 0 must be nonnegative"
+    ):
+        _ = byte_ranges_of_code_points("abc", negative)
+
+    var past_end: List[Int] = [3]
+    with assert_raises(
+        contains="code-point index 3 is outside text code-point count 3"
+    ):
+        _ = byte_ranges_of_code_points("abc", past_end)
 
 
 def main() raises:

@@ -6,47 +6,61 @@ Unicode text, search, and layout primitives for Mojo.
 
 ## Scope
 
-Moji fills application-layer gaps above Mojo's UTF-8 strings without duplicating standard-library grapheme support.
+Moji fills application-layer gaps above Mojo's UTF-8 strings without duplicating
+standard-library grapheme support. It provides terminal display width, validated
+byte ranges, safe slicing, explicit index conversion, and lossless source-range
+mappings.
 
-The first implementation milestone is intentionally narrow: implement terminal display width, validated byte ranges, safe slicing, index conversion, and transformed-to-source range mappings.
 The project is independently installable and does not require any application
 from the wider ecosystem.
 
 ## Quick start
 
-Moji's first public slice makes UTF-8 byte indexing explicit and rejects slices
-that split a multi-byte code point:
+Measure mixed CJK and emoji text, then truncate a filename without splitting a
+grapheme cluster:
 
 ```mojo
-from moji import ByteOffset, ByteRange, slice_text
+from moji import (
+    ByteOffset,
+    ByteRange,
+    ColumnSnap,
+    DisplayColumn,
+    byte_offset_at_column,
+    slice_text,
+    text_width,
+)
+
+
+def truncate_filename(text: StringSlice, columns: Int) raises -> String:
+    if text_width(text) <= columns:
+        return String(text)
+    var ellipsis = String("…")
+    var content_columns = max(columns - text_width(ellipsis), 0)
+    var end = byte_offset_at_column(
+        text,
+        DisplayColumn(content_columns),
+        ColumnSnap.FLOOR,
+    )
+    return String(
+        slice_text(text, ByteRange(ByteOffset(0), end)),
+        ellipsis,
+    )
 
 
 def main() raises:
-    var text = String("北京 notes")
-    var city_start = ByteOffset(0)
-    var city_end = ByteOffset(6)
-    var city = slice_text(text, ByteRange(city_start, city_end))
-    print(city)
+    var label = String("北京 👨‍👩‍👧‍👦")
+    print("width:", text_width(label))
+
+    var filename = String("2026-北京旅行-家族👨‍👩‍👧‍👦-notes.txt")
+    print(truncate_filename(filename, 20))
+
+    print(slice_text("a北京b", ByteRange(1, 7)))
 ```
 
-`ByteRange` is half-open: its start is inclusive and its end is exclusive.
-Construction from either integer endpoints or `ByteOffset` values validates
-their ordering. `slice_text()` additionally validates the range against the
-supplied text and requires both endpoints to be UTF-8 code-point boundaries.
-Read the endpoints with `start()` and `end()`; underscore-prefixed storage is
-not API. Construction establishes storage invariants and reads trust them
-thereafter. Call `validate()` for an explicit checkpoint after unusual low-level
-mutation. Grapheme-aware indexing is a separate planned API.
-
-Moji also distinguishes `ByteOffset`, `CodePointIndex`, `GraphemeIndex`, and
-`DisplayColumn` as nominal nonnegative coordinate values. Equality and ordering
-operate only within the same unit. These values retain no text, and Moji does
-not implicitly convert between them: later text-dependent conversion functions
-will require the source text and report invalid boundaries or indices.
-Calling `value()` explicitly erases the unit, so callers comparing extracted
-integers are responsible for keeping their coordinate meanings aligned. Their
-constructors reject negative values, reads trust the established invariant, and
-`validate()` provides an explicit checkpoint.
+`text_width()` measures terminal columns per extended grapheme cluster.
+`byte_offset_at_column()` returns a grapheme boundary; `ColumnSnap.FLOOR` snaps a
+column inside a wide cluster to its left edge. `ByteRange` remains half-open,
+and `slice_text()` rejects ranges outside the text or inside UTF-8 code points.
 
 ## Development
 
@@ -70,9 +84,10 @@ The Mojo import is `moji`. The eventual Conda distribution is
 `mojo-moji`. Source lives under `src/moji/`, whose
 `__init__.mojo` defines the package boundary.
 
-The experimental root API currently exports the four coordinate types plus
-`ByteRange`, `is_utf8_boundary`, `validate_text_range`, and `slice_text`. These
-names are tested but remain subject to change until the first release.
+The experimental root API exports nominal byte, code-point, grapheme, and
+display-column coordinates plus range, conversion, grapheme, slicing, and width
+operations. These names are tested but remain subject to change until the first
+release.
 
 ## Repository map
 

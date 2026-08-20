@@ -8,9 +8,24 @@ from .byte_range import (
 )
 from .conversion import (
     byte_offset_of,
+    byte_ranges_of_code_points,
     code_point_index,
     count_code_points,
     floor_utf8_boundary,
+)
+from .column import (
+    ColumnSnap,
+    byte_offset_at_column,
+    display_column,
+)
+from .grapheme import (
+    GraphemeSpan,
+    GraphemeSpanIterator,
+    byte_range_of_grapheme,
+    count_graphemes,
+    grapheme_index,
+    grapheme_spans,
+    slice_graphemes,
 )
 from .position import ByteOffset, CodePointIndex, DisplayColumn, GraphemeIndex
 from .width import (

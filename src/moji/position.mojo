@@ -121,6 +121,14 @@ struct GraphemeIndex(Copyable, Equatable):
         _validate_nonnegative(value, "grapheme index")
         self._value = value
 
+    @staticmethod
+    def _from_validated(value: Int) -> Self:
+        """Construct a grapheme index whose value is already trusted."""
+        return Self(value, _validated=_Validated())
+
+    def __init__(out self, value: Int, *, _validated: _Validated):
+        self._value = value
+
     def validate(self) raises:
         """Validate the stored grapheme index explicitly."""
         _validate_nonnegative(self._value, "grapheme index")
@@ -159,6 +167,14 @@ struct DisplayColumn(Copyable, Equatable):
 
     def __init__(out self, value: Int) raises:
         _validate_nonnegative(value, "display column")
+        self._value = value
+
+    @staticmethod
+    def _from_validated(value: Int) -> Self:
+        """Construct a display column whose value is already trusted."""
+        return Self(value, _validated=_Validated())
+
+    def __init__(out self, value: Int, *, _validated: _Validated):
         self._value = value
 
     def validate(self) raises:

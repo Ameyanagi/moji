@@ -8,7 +8,7 @@ struct _Validated:
         pass
 
 
-struct ByteRange(Copyable, Equatable):
+struct ByteRange(Copyable, Equatable, ImplicitlyCopyable):
     """A validated half-open range of byte offsets.
 
     `start()` is inclusive and `end()` is exclusive. Construction establishes
