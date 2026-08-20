@@ -16,6 +16,23 @@ install an application, renderer, language layer, or scientific stack.
 
 Planned implementation areas: width, boundary, index, slice, mapping, text-view, and property adapters built on Mojo 1.0 grapheme iteration.
 
+The first implemented layer is `byte_range.mojo`. It owns half-open byte ranges,
+UTF-8 code-point-boundary validation, and safe slicing. It deliberately does
+not claim grapheme safety; semantic index conversions will build above it.
+
+Mojo 1.0 does not enforce private struct fields. `ByteRange` therefore uses
+underscore-prefixed storage by convention and a normalization-closed
+representation: every possible pair of underlying `Int` values produces
+nonnegative, ordered, representable semantic endpoints through `start()` and
+`end()`. Public behavior never trusts the raw storage values.
+
+Boundary classification accepts `StringSlice`, whose text has already entered
+Mojo's UTF-8 string model. It does not validate arbitrary byte buffers. Moji
+guards out-of-bounds offsets, then delegates classification to the pinned
+standard library's `StringSlice.is_codepoint_boundary()`. This keeps Unicode
+storage semantics in the standard library while giving applications a total
+predicate that returns `False` for invalid offsets.
+
 The package root exports only the small documented public surface. Algorithms,
 generated tables, platform details, and backend implementations remain in
 their owning modules. Generic Mojo-native buffers, spans, strings, and

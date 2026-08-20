@@ -1,5 +1,7 @@
-from moji._scaffold import scaffold_name
+from moji import ByteRange, slice_text
 
 
-def main():
-    print(scaffold_name(), "is an experimental scaffold; no API is released yet.")
+def main() raises:
+    var text = String("北京 notes")
+    var city = slice_text(text, ByteRange(0, 6))
+    print(city)
