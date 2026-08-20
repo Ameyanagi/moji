@@ -12,4 +12,6 @@ and uses semantic versioning after the first public release.
   APIs with CJK, emoji, combining-mark, and invalid-range coverage.
 - Nominal nonnegative byte-offset, code-point-index, grapheme-index, and
   display-column values with same-unit comparison and compile-fail unit checks.
+- Diagnostic-specific mixed-unit compile failures and per-unit extreme-order
+  regression coverage.
 - An issue-sized v0.1 execution plan with dependency and release gates.

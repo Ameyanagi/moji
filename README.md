@@ -40,6 +40,8 @@ Moji also distinguishes `ByteOffset`, `CodePointIndex`, `GraphemeIndex`, and
 operate only within the same unit. These values retain no text, and Moji does
 not implicitly convert between them: later text-dependent conversion functions
 will require the source text and report invalid boundaries or indices.
+Calling `value()` explicitly erases the unit, so callers comparing extracted
+integers are responsible for keeping their coordinate meanings aligned.
 
 ## Development
 

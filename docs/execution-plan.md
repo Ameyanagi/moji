@@ -57,7 +57,9 @@ Prerequisite: MOJI-001.
 
 Add nominal `ByteOffset`, `CodePointIndex`, `GraphemeIndex`, and
 `DisplayColumn` values. Define construction, equality, ordering needs, and
-conversion failure behavior without allowing raw integers to blur units.
+conversion failure behavior without implicit unit mixing. Calling `value()`
+explicitly erases the nominal unit and makes the caller responsible for tracking
+what the resulting `Int` means.
 
 The implemented types reject negative construction, normalize externally
 reachable storage mutation, compare and order only within the same nominal
@@ -68,8 +70,8 @@ fallible conversions rather than implicit casts.
 Acceptance checks:
 
 - negative positions are unrepresentable or rejected;
-- compile-time API fixtures show that unlike position units are not
-  interchangeable; and
+- compile-time API fixtures show that unlike position units are not implicitly
+  interchangeable in arguments, equality, or ordering;
 - no position type retains a borrowed string.
 
 ### MOJI-003: byte/code-point conversion

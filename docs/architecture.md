@@ -39,6 +39,8 @@ rejects negative input, and their normalization-closed storage keeps semantic
 values nonnegative even after externally reachable field mutation. Equality and
 ordering accept only the same nominal unit. Cross-unit conversion is deliberately
 absent until the relevant text and width contracts can validate it.
+Calling `value()` is an explicit unit-erasure escape hatch; code that extracts an
+`Int` assumes responsibility for preserving its coordinate meaning.
 
 The package root exports only the small documented public surface. Algorithms,
 generated tables, platform details, and backend implementations remain in
