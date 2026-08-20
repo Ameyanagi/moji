@@ -1,60 +1,67 @@
 """Validated byte ranges and UTF-8-boundary-safe slicing."""
 
+from .position import ByteOffset
+
 
 struct ByteRange(Copyable, Equatable):
     """A validated half-open range of byte offsets.
 
-    `start()` is inclusive and `end()` is exclusive. Construction and semantic
-    access guarantee `0 <= start() <= end()`, but a range is not tied to a
-    particular string until it is passed to `validate_text_range()` or
-    `slice_text()`.
+    `start()` is inclusive and `end()` is exclusive. Construction establishes
+    `0 <= start() <= end()`, but a range is not tied to a particular string
+    until it is passed to `validate_text_range()` or `slice_text()`. Reads trust
+    that invariant thereafter. Direct mutation of underscore-prefixed storage
+    is out of contract; call `validate()` explicitly after unusual low-level
+    mutation when a checkpoint is needed.
     """
 
-    # Mojo 1.0 does not enforce private struct fields. Store a start hint and a
-    # length hint so every possible pair of Int field values normalizes to a
-    # valid semantic range, even if external code ignores underscore convention.
-    var _start_hint: Int
-    var _length_hint: Int
+    var _start: Int
+    var _end: Int
 
     def __init__(out self, start: Int, end: Int) raises:
         if start < 0:
             raise Error("byte range start must be nonnegative")
         if end < start:
             raise Error("byte range end must not precede start")
-        self._start_hint = start
-        self._length_hint = end - start
+        self._start = start
+        self._end = end
 
-    def _normalized_start(self) -> Int:
-        return max(self._start_hint, 0)
+    def __init__(out self, start: ByteOffset, end: ByteOffset) raises:
+        var start_value = start.value()
+        var end_value = end.value()
+        if end_value < start_value:
+            raise Error("byte range end must not precede start")
+        self._start = start_value
+        self._end = end_value
 
-    def _normalized_length(self) -> Int:
-        var start = self._normalized_start()
-        if self._length_hint <= 0:
-            return 0
-        return min(self._length_hint, Int.MAX - start)
+    def validate(self) raises:
+        """Validate the stored endpoints explicitly."""
+        if self._start < 0:
+            raise Error("byte range start must be nonnegative")
+        if self._end < self._start:
+            raise Error("byte range end must not precede start")
 
     def start(self) -> Int:
         """Return the inclusive byte offset."""
-        return self._normalized_start()
+        return self._start
 
     def end(self) -> Int:
         """Return the exclusive byte offset."""
-        return self._normalized_start() + self._normalized_length()
+        return self._end
 
     def __eq__(self, other: Self) -> Bool:
-        return self.start() == other.start() and self.end() == other.end()
+        return self._start == other._start and self._end == other._end
 
     def byte_length(self) -> Int:
         """Return the number of bytes in the range."""
-        return self._normalized_length()
+        return self._end - self._start
 
     def is_empty(self) -> Bool:
         """Return whether the range contains no bytes."""
-        return self._normalized_length() == 0
+        return self._start == self._end
 
     def contains(self, byte_offset: Int) -> Bool:
         """Return whether `byte_offset` is inside this half-open range."""
-        return byte_offset >= self.start() and byte_offset < self.end()
+        return byte_offset >= self._start and byte_offset < self._end
 
 
 def is_utf8_boundary(text: StringSlice, byte_offset: Int) -> Bool:

@@ -10,6 +10,9 @@
 - Establish correctness and reference fixtures before optimization.
 - Make invalid public configuration unrepresentable when practical; otherwise
   reject it explicitly.
+- Establish invariants in validating constructors and mutating methods, then
+  trust them in non-raising reads. Underscore-prefixed storage is out of contract;
+  validated types expose one explicit raising `validate()` checkpoint.
 - Preserve source mappings, numerical tolerances, ownership, and provenance as
   first-class data when the domain requires them.
 - Do not add a framework-wide array, executor, renderer, or application model.

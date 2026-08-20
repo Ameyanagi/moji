@@ -1,8 +1,15 @@
-from moji import ByteRange, is_utf8_boundary, slice_text, validate_text_range
+from moji import (
+    ByteOffset,
+    ByteRange,
+    is_utf8_boundary,
+    slice_text,
+    validate_text_range,
+)
 from std.testing import (
     TestSuite,
     assert_equal,
     assert_false,
+    assert_raises,
     assert_true,
 )
 
@@ -26,37 +33,37 @@ def test_byte_range_accepts_empty_ranges() raises:
     assert_false(byte_range.contains(3))
 
 
-def test_storage_mutation_cannot_violate_semantic_invariants() raises:
-    # Mojo 1.0 has no enforced field privacy. The underscore fields are not API,
-    # but every possible mutation must still produce nonnegative ordered bounds.
-    var byte_range = ByteRange(2, 5)
-    byte_range._start_hint = -100
-    byte_range._length_hint = Int.MAX
-    assert_equal(byte_range.start(), 0)
-    assert_equal(byte_range.end(), Int.MAX)
-    assert_equal(byte_range.byte_length(), Int.MAX)
+def test_byte_range_composes_byte_offsets() raises:
+    var byte_range = ByteRange(ByteOffset(2), ByteOffset(5))
+    assert_equal(byte_range.start(), 2)
+    assert_equal(byte_range.end(), 5)
 
-    byte_range._start_hint = Int.MAX
-    byte_range._length_hint = Int.MAX
-    assert_equal(byte_range.start(), Int.MAX)
-    assert_equal(byte_range.end(), Int.MAX)
-    assert_true(byte_range.is_empty())
+
+def test_byte_range_validate_rejects_mutated_storage() raises:
+    var byte_range = ByteRange(2, 5)
+    byte_range._start = -1
+    assert_equal(byte_range.start(), -1)
+    with assert_raises(contains="byte range start must be nonnegative"):
+        byte_range.validate()
+
+    byte_range._start = 2
+    byte_range._end = 1
+    assert_equal(byte_range.end(), 1)
+    with assert_raises(contains="byte range end must not precede start"):
+        byte_range.validate()
 
 
 def test_byte_range_rejects_negative_start() raises:
-    try:
+    with assert_raises(contains="byte range start must be nonnegative"):
         _ = ByteRange(-1, 0)
-    except:
-        return
-    raise Error("expected a negative byte range start to be rejected")
 
 
 def test_byte_range_rejects_reversed_endpoints() raises:
-    try:
+    with assert_raises(contains="byte range end must not precede start"):
         _ = ByteRange(2, 1)
-    except:
-        return
-    raise Error("expected reversed byte range endpoints to be rejected")
+
+    with assert_raises(contains="byte range end must not precede start"):
+        _ = ByteRange(ByteOffset(2), ByteOffset(1))
 
 
 def test_utf8_boundaries_cover_ascii_and_multibyte_text() raises:
@@ -76,6 +83,12 @@ def test_empty_text_has_one_boundary() raises:
     assert_false(is_utf8_boundary("", 1))
 
 
+def test_empty_text_accepts_its_empty_range() raises:
+    var empty_range = ByteRange(0, 0)
+    validate_text_range("", empty_range)
+    assert_equal(slice_text("", empty_range), "")
+
+
 def test_safe_slice_handles_ascii_cjk_and_emoji() raises:
     var text = String("A界🙂Z")
     assert_equal(slice_text(text, ByteRange(0, 1)), "A")
@@ -86,35 +99,23 @@ def test_safe_slice_handles_ascii_cjk_and_emoji() raises:
 
 
 def test_safe_slice_rejects_out_of_bounds_range() raises:
-    try:
+    with assert_raises(contains="byte range is outside the text"):
         _ = slice_text("abc", ByteRange(0, 4))
-    except:
-        return
-    raise Error("expected an out-of-bounds byte range to be rejected")
 
 
 def test_safe_slice_rejects_interior_start() raises:
-    try:
+    with assert_raises(contains="byte range start splits a UTF-8 code point"):
         _ = slice_text("界", ByteRange(1, 3))
-    except:
-        return
-    raise Error("expected a range starting inside UTF-8 to be rejected")
 
 
 def test_safe_slice_rejects_interior_end() raises:
-    try:
+    with assert_raises(contains="byte range end splits a UTF-8 code point"):
         _ = slice_text("界", ByteRange(0, 2))
-    except:
-        return
-    raise Error("expected a range ending inside UTF-8 to be rejected")
 
 
 def test_safe_slice_rejects_empty_range_inside_codepoint() raises:
-    try:
+    with assert_raises(contains="byte range start splits a UTF-8 code point"):
         _ = slice_text("界", ByteRange(1, 1))
-    except:
-        return
-    raise Error("expected an empty range inside UTF-8 to be rejected")
 
 
 def test_validation_allows_codepoint_boundary_inside_grapheme() raises:

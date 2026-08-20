@@ -9,86 +9,96 @@ def test_position_values_preserve_their_units() raises:
     assert_true(DisplayColumn(7).value() == 7)
 
 
-def test_byte_offset_total_order_survives_mutated_extremes() raises:
-    var normalized_zero = ByteOffset(4)
-    normalized_zero._value_hint = Int.MIN
+def test_byte_offset_total_order_handles_extremes() raises:
     var zero = ByteOffset(0)
-    var maximum = ByteOffset(4)
-    maximum._value_hint = Int.MAX
-    assert_true(normalized_zero.value() == 0)
-    assert_true(normalized_zero == zero)
-    assert_true(normalized_zero <= zero)
-    assert_true(normalized_zero >= zero)
-    assert_false(normalized_zero < zero)
-    assert_false(normalized_zero > zero)
-    assert_true(normalized_zero < maximum)
-    assert_true(maximum > normalized_zero)
+    var maximum = ByteOffset(Int.MAX)
+    assert_true(zero == ByteOffset(0))
+    assert_true(zero <= ByteOffset(0))
+    assert_true(zero >= ByteOffset(0))
+    assert_false(zero < ByteOffset(0))
+    assert_false(zero > ByteOffset(0))
+    assert_true(zero < maximum)
+    assert_true(maximum > zero)
     assert_true(maximum <= ByteOffset(Int.MAX))
     assert_true(maximum >= ByteOffset(Int.MAX))
 
 
-def test_codepoint_index_total_order_survives_mutated_extremes() raises:
-    var normalized_zero = CodePointIndex(4)
-    normalized_zero._value_hint = Int.MIN
+def test_codepoint_index_total_order_handles_extremes() raises:
     var zero = CodePointIndex(0)
-    var maximum = CodePointIndex(4)
-    maximum._value_hint = Int.MAX
-    assert_true(normalized_zero.value() == 0)
-    assert_true(normalized_zero == zero)
-    assert_true(normalized_zero <= zero)
-    assert_true(normalized_zero >= zero)
-    assert_false(normalized_zero < zero)
-    assert_false(normalized_zero > zero)
-    assert_true(normalized_zero < maximum)
-    assert_true(maximum > normalized_zero)
+    var maximum = CodePointIndex(Int.MAX)
+    assert_true(zero == CodePointIndex(0))
+    assert_true(zero <= CodePointIndex(0))
+    assert_true(zero >= CodePointIndex(0))
+    assert_false(zero < CodePointIndex(0))
+    assert_false(zero > CodePointIndex(0))
+    assert_true(zero < maximum)
+    assert_true(maximum > zero)
     assert_true(maximum <= CodePointIndex(Int.MAX))
     assert_true(maximum >= CodePointIndex(Int.MAX))
 
 
-def test_grapheme_index_total_order_survives_mutated_extremes() raises:
-    var normalized_zero = GraphemeIndex(4)
-    normalized_zero._value_hint = Int.MIN
+def test_grapheme_index_total_order_handles_extremes() raises:
     var zero = GraphemeIndex(0)
-    var maximum = GraphemeIndex(4)
-    maximum._value_hint = Int.MAX
-    assert_true(normalized_zero.value() == 0)
-    assert_true(normalized_zero == zero)
-    assert_true(normalized_zero <= zero)
-    assert_true(normalized_zero >= zero)
-    assert_false(normalized_zero < zero)
-    assert_false(normalized_zero > zero)
-    assert_true(normalized_zero < maximum)
-    assert_true(maximum > normalized_zero)
+    var maximum = GraphemeIndex(Int.MAX)
+    assert_true(zero == GraphemeIndex(0))
+    assert_true(zero <= GraphemeIndex(0))
+    assert_true(zero >= GraphemeIndex(0))
+    assert_false(zero < GraphemeIndex(0))
+    assert_false(zero > GraphemeIndex(0))
+    assert_true(zero < maximum)
+    assert_true(maximum > zero)
     assert_true(maximum <= GraphemeIndex(Int.MAX))
     assert_true(maximum >= GraphemeIndex(Int.MAX))
 
 
-def test_display_column_total_order_survives_mutated_extremes() raises:
-    var normalized_zero = DisplayColumn(4)
-    normalized_zero._value_hint = Int.MIN
+def test_display_column_total_order_handles_extremes() raises:
     var zero = DisplayColumn(0)
-    var maximum = DisplayColumn(4)
-    maximum._value_hint = Int.MAX
-    assert_true(normalized_zero.value() == 0)
-    assert_true(normalized_zero == zero)
-    assert_true(normalized_zero <= zero)
-    assert_true(normalized_zero >= zero)
-    assert_false(normalized_zero < zero)
-    assert_false(normalized_zero > zero)
-    assert_true(normalized_zero < maximum)
-    assert_true(maximum > normalized_zero)
+    var maximum = DisplayColumn(Int.MAX)
+    assert_true(zero == DisplayColumn(0))
+    assert_true(zero <= DisplayColumn(0))
+    assert_true(zero >= DisplayColumn(0))
+    assert_false(zero < DisplayColumn(0))
+    assert_false(zero > DisplayColumn(0))
+    assert_true(zero < maximum)
+    assert_true(maximum > zero)
     assert_true(maximum <= DisplayColumn(Int.MAX))
     assert_true(maximum >= DisplayColumn(Int.MAX))
 
 
+def test_validate_rejects_mutated_position_storage() raises:
+    var byte_offset = ByteOffset(4)
+    byte_offset._value = -1
+    assert_true(byte_offset.value() == -1)
+    with assert_raises(contains="byte offset must be nonnegative"):
+        byte_offset.validate()
+
+    var codepoint_index = CodePointIndex(4)
+    codepoint_index._value = -1
+    assert_true(codepoint_index.value() == -1)
+    with assert_raises(contains="code-point index must be nonnegative"):
+        codepoint_index.validate()
+
+    var grapheme_index = GraphemeIndex(4)
+    grapheme_index._value = -1
+    assert_true(grapheme_index.value() == -1)
+    with assert_raises(contains="grapheme index must be nonnegative"):
+        grapheme_index.validate()
+
+    var display_column = DisplayColumn(4)
+    display_column._value = -1
+    assert_true(display_column.value() == -1)
+    with assert_raises(contains="display column must be nonnegative"):
+        display_column.validate()
+
+
 def test_negative_positions_are_rejected() raises:
-    with assert_raises():
+    with assert_raises(contains="byte offset must be nonnegative"):
         _ = ByteOffset(-1)
-    with assert_raises():
+    with assert_raises(contains="code-point index must be nonnegative"):
         _ = CodePointIndex(-1)
-    with assert_raises():
+    with assert_raises(contains="grapheme index must be nonnegative"):
         _ = GraphemeIndex(-1)
-    with assert_raises():
+    with assert_raises(contains="display column must be nonnegative"):
         _ = DisplayColumn(-1)
 
 

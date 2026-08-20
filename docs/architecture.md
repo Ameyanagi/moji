@@ -20,11 +20,12 @@ The first implemented layer is `byte_range.mojo`. It owns half-open byte ranges,
 UTF-8 code-point-boundary validation, and safe slicing. It deliberately does
 not claim grapheme safety; semantic index conversions will build above it.
 
-Mojo 1.0 does not enforce private struct fields. `ByteRange` therefore uses
-underscore-prefixed storage by convention and a normalization-closed
-representation: every possible pair of underlying `Int` values produces
-nonnegative, ordered, representable semantic endpoints through `start()` and
-`end()`. Public behavior never trusts the raw storage values.
+`ByteRange` validates nonnegative, ordered endpoints at construction and then
+serves non-raising reads directly from its underscore-prefixed storage. Mojo 1.0
+does not enforce field privacy, so direct mutation of that storage is out of
+contract. Callers doing unusual low-level mutation can use the explicit raising
+`validate()` method as a checkpoint. Construction from two trusted `ByteOffset`
+values validates their ordering without erasing their unit at the call site.
 
 Boundary classification accepts `StringSlice`, whose text has already entered
 Mojo's UTF-8 string model. It does not validate arbitrary byte buffers. Moji
@@ -35,10 +36,11 @@ predicate that returns `False` for invalid offsets.
 
 `position.mojo` defines nominal byte, code-point, grapheme, and display-column
 coordinates. They retain only an `Int`, never a borrowed string. Construction
-rejects negative input, and their normalization-closed storage keeps semantic
-values nonnegative even after externally reachable field mutation. Equality and
-ordering accept only the same nominal unit. Cross-unit conversion is deliberately
-absent until the relevant text and width contracts can validate it.
+rejects negative input, after which non-raising value reads and comparisons trust
+the stored invariant. Direct mutation of underscore-prefixed storage is out of
+contract, with one explicit raising `validate()` checkpoint available per type.
+Equality and ordering accept only the same nominal unit. Cross-unit conversion is
+deliberately absent until the relevant text and width contracts can validate it.
 Calling `value()` is an explicit unit-erasure escape hatch; code that extracts an
 `Int` assumes responsibility for preserving its coordinate meaning.
 

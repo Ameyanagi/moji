@@ -38,8 +38,8 @@ Every work item must satisfy all applicable gates:
 Deliverables:
 
 - `ByteRange` with nonnegative, ordered, half-open endpoints;
-- a normalization-closed representation that preserves those invariants even
-  though Mojo 1.0 does not enforce private struct fields;
+- constructor-established invariants, trusted non-raising reads, and an explicit
+  `validate()` checkpoint for unusual low-level mutation;
 - UTF-8 code-point-boundary detection for a `StringSlice`;
 - validation against a specific text value; and
 - copying safe slices without exposing unchecked indexing.
@@ -61,11 +61,12 @@ conversion failure behavior without implicit unit mixing. Calling `value()`
 explicitly erases the nominal unit and makes the caller responsible for tracking
 what the resulting `Int` means.
 
-The implemented types reject negative construction, normalize externally
-reachable storage mutation, compare and order only within the same nominal
-unit, and retain no text. Cross-unit conversion is intentionally absent in this
-slice: MOJI-003, MOJI-004, and MOJI-010 will add explicit text-dependent
-fallible conversions rather than implicit casts.
+The implemented types reject negative construction, trust their stored invariant
+thereafter, compare and order only within the same nominal unit, and retain no
+text. Direct mutation of underscore-prefixed storage is out of contract; each
+type offers an explicit raising `validate()` checkpoint. Cross-unit conversion is
+intentionally absent in this slice: MOJI-003, MOJI-004, and MOJI-010 will add
+explicit text-dependent fallible conversions rather than implicit casts.
 
 Acceptance checks:
 
