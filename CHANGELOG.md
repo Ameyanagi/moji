@@ -10,4 +10,6 @@ and uses semantic versioning after the first public release.
 - Initial experimental repository scaffold.
 - Experimental `ByteRange`, UTF-8 boundary validation, and safe text slicing
   APIs with CJK, emoji, combining-mark, and invalid-range coverage.
+- Nominal nonnegative byte-offset, code-point-index, grapheme-index, and
+  display-column values with same-unit comparison and compile-fail unit checks.
 - An issue-sized v0.1 execution plan with dependency and release gates.

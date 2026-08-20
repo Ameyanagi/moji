@@ -51,13 +51,19 @@ Acceptance checks:
 - document that code-point safety is not grapheme-cluster safety; and
 - demonstrate the root API with CJK text.
 
-### MOJI-002: explicit position types
+### MOJI-002: explicit position types — complete
 
 Prerequisite: MOJI-001.
 
 Add nominal `ByteOffset`, `CodePointIndex`, `GraphemeIndex`, and
 `DisplayColumn` values. Define construction, equality, ordering needs, and
 conversion failure behavior without allowing raw integers to blur units.
+
+The implemented types reject negative construction, normalize externally
+reachable storage mutation, compare and order only within the same nominal
+unit, and retain no text. Cross-unit conversion is intentionally absent in this
+slice: MOJI-003, MOJI-004, and MOJI-010 will add explicit text-dependent
+fallible conversions rather than implicit casts.
 
 Acceptance checks:
 

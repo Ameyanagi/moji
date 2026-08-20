@@ -18,12 +18,13 @@ Moji's first public slice makes UTF-8 byte indexing explicit and rejects slices
 that split a multi-byte code point:
 
 ```mojo
-from moji import ByteRange, slice_text
+from moji import ByteOffset, ByteRange, slice_text
 
 
 def main() raises:
     var text = String("北京 notes")
-    var city = slice_text(text, ByteRange(0, 6))
+    var city_end = ByteOffset(6)
+    var city = slice_text(text, ByteRange(0, city_end.value()))
     print(city)
 ```
 
@@ -33,6 +34,12 @@ validates the range against the supplied text and requires both endpoints to be
 UTF-8 code-point boundaries. Read the endpoints with `start()` and `end()`;
 underscore-prefixed storage is not API. Grapheme-aware indexing is a separate
 planned API.
+
+Moji also distinguishes `ByteOffset`, `CodePointIndex`, `GraphemeIndex`, and
+`DisplayColumn` as nominal nonnegative coordinate values. Equality and ordering
+operate only within the same unit. These values retain no text, and Moji does
+not implicitly convert between them: later text-dependent conversion functions
+will require the source text and report invalid boundaries or indices.
 
 ## Development
 
@@ -56,9 +63,9 @@ The Mojo import is `moji`. The eventual Conda distribution is
 `mojo-moji`. Source lives under `src/moji/`, whose
 `__init__.mojo` defines the package boundary.
 
-The experimental root API currently exports `ByteRange`, `is_utf8_boundary`,
-`validate_text_range`, and `slice_text`. These names are tested but remain
-subject to change until the first release.
+The experimental root API currently exports the four coordinate types plus
+`ByteRange`, `is_utf8_boundary`, `validate_text_range`, and `slice_text`. These
+names are tested but remain subject to change until the first release.
 
 ## Repository map
 

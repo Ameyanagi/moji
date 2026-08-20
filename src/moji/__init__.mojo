@@ -6,3 +6,4 @@ from .byte_range import (
     slice_text,
     validate_text_range,
 )
+from .position import ByteOffset, CodePointIndex, DisplayColumn, GraphemeIndex

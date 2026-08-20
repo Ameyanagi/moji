@@ -33,6 +33,13 @@ standard library's `StringSlice.is_codepoint_boundary()`. This keeps Unicode
 storage semantics in the standard library while giving applications a total
 predicate that returns `False` for invalid offsets.
 
+`position.mojo` defines nominal byte, code-point, grapheme, and display-column
+coordinates. They retain only an `Int`, never a borrowed string. Construction
+rejects negative input, and their normalization-closed storage keeps semantic
+values nonnegative even after externally reachable field mutation. Equality and
+ordering accept only the same nominal unit. Cross-unit conversion is deliberately
+absent until the relevant text and width contracts can validate it.
+
 The package root exports only the small documented public surface. Algorithms,
 generated tables, platform details, and backend implementations remain in
 their owning modules. Generic Mojo-native buffers, spans, strings, and
