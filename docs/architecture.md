@@ -1,5 +1,8 @@
 # Architecture
 
+The detailed v0.1 reference decisions, upstream evidence, ownership rules, and
+issue ordering live in [Reference architecture](reference-architecture.md).
+
 Moji owns Unicode application text views, terminal width, safe indexing, and lossless transformed-to-source mappings.
 
 ## Dependency boundary

@@ -78,9 +78,11 @@ names are tested but remain subject to change until the first release.
 - `docs/`: architecture, design, compatibility, roadmap, and release policy
 - `conda.recipe/`: local Rattler build recipe
 
-See [the architecture](docs/architecture.md), [design principles](docs/design.md),
-[roadmap](docs/roadmap.md), and [v0.1 execution plan](docs/execution-plan.md)
-before proposing a new dependency or feature.
+See [the architecture](docs/architecture.md),
+[reference architecture](docs/reference-architecture.md),
+[design principles](docs/design.md), [roadmap](docs/roadmap.md), and
+[v0.1 execution plan](docs/execution-plan.md) before proposing a new dependency
+or feature.
 
 ## License
 
