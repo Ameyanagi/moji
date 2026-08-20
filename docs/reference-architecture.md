@@ -155,10 +155,16 @@ transformed bytes   MappingSegment[]   source bytes
 
 ### Storage coordinates
 
-`ByteRange` remains half-open and normalization-closed. Public operations
-observe ordered, non-negative endpoints even if current Mojo field visibility
-lets external code mutate the stored values. A checked text operation also
-requires both endpoints to be UTF-8 code-point boundaries.
+`ByteRange` remains half-open. Construction and every public observation
+revalidate its reachable endpoint storage and raise if the start is negative,
+the end precedes the start, or the represented length overflows. No accessor
+clamps, reorders, saturates, or converts invalid storage to an empty range. A
+checked text operation additionally requires both endpoints to be UTF-8
+code-point boundaries.
+
+The current experimental start/length-hint implementation normalizes corrupted
+storage. That is temporary scaffolding, not this architecture's contract;
+MOJI-002R must replace it before any release.
 
 Empty ranges are valid only at a code-point boundary. In particular, an empty
 range inside a multibyte scalar is rejected.
@@ -170,10 +176,20 @@ The end boundary is a valid index in every coordinate system. A conversion
 raises when its input is out of range or is not a boundary in the source
 coordinate system.
 
+For valid Mojo UTF-8 text, `CodePointIndex` counts Unicode scalar values and is
+the nominal form of Hibana's documented scalar position. It does not count
+bytes, graphemes, UTF-16 code units, or display cells.
+
 Initial conversion complexity is linear in the traversed prefix. This is a
 documented contract, not an invitation to hide a cache in a value type. A
 persistent index can be considered only after representative benchmarks show
 that repeated scans dominate downstream work.
+
+`codepoint_to_byte_range(text, index)` names the one Unicode scalar at `index`
+as a checked non-empty `ByteRange`. It rejects the final code-point boundary,
+which is valid for `codepoint_to_byte()` but does not identify a scalar. This is
+the minimal bridge from Hibana's scalar positions to mapping queries; callers do
+not erase the unit, add one, or assemble byte endpoints themselves.
 
 ### Display coordinates
 
@@ -186,10 +202,18 @@ and hard terminal controls rather than assigning them a fictitious cell width;
 combining marks, variation selectors, joiners, and other components handled by
 the cluster width algorithm are not classified as standalone hard controls.
 
-The reverse mapping from a display column to a byte offset must name what
-happens inside a multi-cell grapheme. The default is rejection. Optional
-`BEFORE` and `AFTER` resolution may be exposed through a nominal policy, never
-through silent snapping or a boolean.
+`byte_to_column()` accepts only a grapheme boundary and measures the prefix
+under the supplied `WidthPolicy`. This is the single forward bridge into display
+coordinates; callers do not slice and copy a prefix merely to call
+`text_width()`.
+
+Reverse mapping is unique only when exactly one grapheme boundary occupies the
+requested display column. A column inside a multi-cell grapheme has no exact
+boundary, while a zero-width grapheme run can place several byte boundaries at
+the same column. `ColumnResolution.REJECT` raises in either non-unique case.
+`BEFORE` returns the earliest resolving byte boundary and `AFTER` returns the
+latest. These names cover both wide-cell interiors and zero-width boundary runs;
+there is no silent snapping or boolean resolution mode.
 
 ### Transformation mappings
 
@@ -203,11 +227,15 @@ A finalized map enforces these invariants:
   transformed text without gaps;
 - source ranges may repeat, contract, expand, or occur out of source order;
 - an empty transformed text has no segments;
-- a query range is checked against the transformed text before projection;
+- an empty query-range collection returns an empty result;
+- every member query is non-empty and checked against the transformed text
+  before projection; members may arrive in any order;
 - intersecting any part of an indivisible transformed segment projects that
   segment's full source range;
-- query results are sorted by source position and merge only overlapping or
-  touching ranges, never a source gap.
+- batch projection validates the mapped aggregate and every query once before
+  producing output; any error raises without a partial result; and
+- all projected results are globally sorted by source position and merge only
+  overlapping or touching ranges, never a source gap.
 
 These rules cover one-to-one transliteration, expansion, contraction,
 reordering, and discontiguous source highlighting without claiming a
@@ -225,6 +253,9 @@ character-to-character correspondence that does not exist.
 - Final mapped text owns copies of the source and transformed strings together
   with the map validated against them. A map therefore cannot silently outlive
   or detach from the texts that define its byte coordinates.
+- `MappedText.text()` revalidates and returns an owned copy of the transformed
+  text. The copy is the correctness-first v0.1 bridge to Hibana; a borrowed view
+  requires a separate compiled lifetime design.
 - Mutable internal segment storage is never returned directly. Inspection, if
   required, returns detached values.
 
@@ -243,19 +274,25 @@ character-to-character correspondence that does not exist.
 ### Mutation under Mojo 1.0
 
 Mojo 1.0 does not enforce the field privacy needed to make every nominal value
-opaque. Moji therefore distinguishes two cases:
+opaque. Moji therefore has one rule: constructors and every public observation
+revalidate reachable storage and raise on invalid state. They never normalize,
+clamp, reorder, saturate, or guess a replacement value.
 
-- Scalar positions and ranges are normalization-closed: every observation and
-  operation normalizes externally mutated integer storage into their documented
-  non-negative/ordered domain.
-- Relational aggregates such as source maps cannot safely normalize arbitrary
-  mutation without changing meaning. Every public read revalidates the complete
-  aggregate against its owned texts, and public APIs do not expose mutable
-  aggregate storage.
+This includes `value`, range endpoints and length, containment, slicing,
+conversion, mapping-segment inspection, `MappedText.text`, and map projection.
+Relational aggregates revalidate the complete aggregate against their owned
+texts once per public operation. Public APIs never expose mutable aggregate
+storage.
 
-This is a compatibility rule, not merely a test workaround. If a future Mojo
-compiler supplies enforced private storage, Moji can harden representation
-without changing the public semantic contract.
+If `Equatable` or ordering trait signatures cannot raise under the pinned Mojo
+compiler, the affected nominal types do not conform to those traits. They expose
+checked same-unit methods such as `equals()` and `less_than()` instead. It is
+safer to omit operator syntax than to compare corrupted state silently.
+
+MOJI-002R replaces the current normalization implementation and adds direct
+mutation tests for ByteRange and every position type before MOJI-003 or MOJI-005
+lands. Mapping types must use the checked rule from their first implementation.
+No Moji release or downstream package gate may waive this issue.
 
 ## Minimal root API sketch
 
@@ -279,27 +316,39 @@ from moji import (
     slice_text,
     byte_to_codepoint,
     codepoint_to_byte,
+    codepoint_to_byte_range,
     byte_to_grapheme,
     grapheme_to_byte,
-    grapheme_width,
     text_width,
+    byte_to_column,
     column_to_byte,
 )
 ```
+
+`ColumnResolution` enters the root only if the tested `BEFORE` and `AFTER`
+policies ship. Otherwise `column_to_byte` exposes only rejecting behavior and
+the type stays internal or absent.
 
 The intended shapes are deliberately functional:
 
 ```text
 byte_to_codepoint(text, byte) raises -> CodePointIndex
 codepoint_to_byte(text, index) raises -> ByteOffset
+codepoint_to_byte_range(text, index) raises -> ByteRange
 byte_to_grapheme(text, byte) raises -> GraphemeIndex
 grapheme_to_byte(text, index) raises -> ByteOffset
-grapheme_width(grapheme, policy) raises -> DisplayColumn
 text_width(text, policy) raises -> DisplayColumn
+byte_to_column(text, byte, policy) raises -> DisplayColumn
 column_to_byte(text, column, policy, resolution) raises -> ByteOffset
 MappedText(source, transformed, segments) raises
-MappedText.source_ranges(output_range) raises -> List[ByteRange]
+MappedText.text() raises -> String
+MappedText.source_ranges(output_ranges) raises -> List[ByteRange]
 ```
+
+The exact immutable Mojo-native collection/view type for `output_ranges` is
+fixed by a compiled ownership prototype in MOJI-006. The batch semantics above
+are fixed regardless of that container spelling. A one-range convenience
+overload waits for demonstrated use; callers can pass a one-element collection.
 
 There is no generic integer overload, implicit unit conversion, global width
 mode, mutable singleton, or application-specific representation on the root
@@ -317,6 +366,8 @@ an end-to-end downstream test.
   scalars, including rejection of an empty range inside a scalar.
 - Round trips for every valid boundary:
   byte -> code point -> byte and byte -> grapheme -> byte.
+- Exact one-scalar byte ranges for every valid code-point index, including
+  rejection of the final boundary as a scalar.
 - Combining marks, regional indicators, emoji modifiers, keycaps, variation
   selectors, ZWJ sequences, CRLF, Hangul Jamo, and CJK text.
 - Adversarial external mutation of every reachable nominal field.
@@ -336,12 +387,16 @@ not become a copied implementation table.
 - One-to-one, expansion, contraction, repeated-source, reordered-source, and
   discontiguous projection cases.
 - Exact full-segment projection from a partial intersecting output query.
+- Empty batches, one-element batches, unordered query ranges, duplicate ranges,
+  and globally exact merging across multiple discontiguous matches.
 - Rejection of gaps, overlaps, zero-length segments, invalid boundaries, and
   incomplete transformed coverage.
 - Mutation after successful construction followed by every public observation,
   proving revalidation cannot be bypassed.
 - Owned-lifetime tests demonstrating that caller strings and input segment
   lists may change or leave scope without changing a finalized `MappedText`.
+- `text()` snapshot tests proving that it is byte-identical, detached, and
+  revalidates aggregate mutation before copying.
 
 ### Width
 
@@ -352,6 +407,8 @@ not become a copied implementation table.
 - Rejection of newlines and hard controls in one-line measurement.
 - Display-column round trips at grapheme boundaries and explicit behavior for
   a column inside a two-cell grapheme.
+- Reject/before/after behavior for both a wide-cell interior and several byte
+  boundaries sharing one column across zero-width graphemes.
 - Explicit terminal caveat tests should check deterministic policy results,
   not make claims about a particular emulator or font.
 
@@ -384,31 +441,38 @@ including construction time and memory cost.
 
 ## Executable issue ordering
 
-This refines, but does not expand, the v0.1 work in
+This supersedes the issue-ordering details in
 [`execution-plan.md`](execution-plan.md).
 
-1. Start three independent lanes from the completed byte-range and nominal-unit
-   foundation: **MOJI-003** for byte/code-point conversion, **MOJI-005** for the
+1. Complete mandatory **MOJI-002R** first, replacing temporary normalization in
+   ByteRange and positions with checked mutation behavior. No downstream gate
+   may use the current semantics.
+2. Start three independent lanes from that corrected foundation: **MOJI-003**
+   for byte/code-point and single-scalar range conversion, **MOJI-005** for the
    mapping-segment contract, and **MOJI-008** for width policy/provenance.
-2. Complete **MOJI-004** after MOJI-003 by delegating segmentation to
+3. Complete **MOJI-004** after MOJI-003 by delegating segmentation to
    `StringSlice.graphemes()` and adding grapheme conversions, slicing, and
    adversarial fixtures.
-3. Complete **MOJI-006** and then **MOJI-007** after MOJI-005, enforcing
-   gap-free transformed coverage, exact projection, full revalidation, and an
-   owned mapped-text lifetime.
-4. Complete **MOJI-009** only after both MOJI-004 and MOJI-008; implement
+4. Complete **MOJI-006** and then **MOJI-007** after MOJI-005, enforcing
+   gap-free transformed coverage, validate-once batch projection, full
+   revalidation, and an owned mapped-text lifetime plus `text()` snapshot.
+5. Complete **MOJI-009** only after both MOJI-004 and MOJI-008; implement
    grapheme-aware one-line width accumulated into `DisplayColumn`.
-5. Complete **MOJI-010** after MOJI-009, adding rejecting display-column
-   conversion first and named before/after resolution only with wide-grapheme
-   tests.
-6. Converge the lanes at **MOJI-011** for the reviewed root surface, examples,
-   and dependency-free downstream-shaped fixtures.
-7. Finish **MOJI-012** with packaged API, generated-data provenance, supported
-   targets, and clean-prefix installation checks.
+6. Complete **MOJI-010** after MOJI-009, adding checked byte-to-column and
+   rejecting column-to-byte conversion first. Add named before/after resolution
+   only with wide and zero-width ambiguity tests.
+7. Complete packaged search gate **MOJI-011S** after MOJI-003 and MOJI-007,
+   independent of width. It proves root imports, clean-prefix installation, and
+   Moji scalar-to-byte/Yomi mapping/Hibana position/Yuragi highlight fixtures.
+8. Complete packaged display gate **MOJI-011W** after MOJI-004 and MOJI-010,
+   independent of mapping. It proves the minimal width root, clean-prefix
+   installation, and MojoTUI-shaped fixtures.
+9. Finish **MOJI-012** after both gates with the full v0.1 surface, generated-data
+   provenance, supported targets, and clean-prefix installation checks.
 
-This ordering keeps the byte-only mapping lane independent of grapheme work.
-No issue adds an eager text index, invalid-UTF-8 layer, or application-specific
-API.
+This ordering keeps search-coordinate/mapping readiness independent of display
+width, and keeps the byte-only mapping lane independent of grapheme work. No
+issue adds an eager text index, invalid-UTF-8 layer, or application-specific API.
 
 ## Decision triggers after v0.1
 

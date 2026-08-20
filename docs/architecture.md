@@ -23,11 +23,11 @@ The first implemented layer is `byte_range.mojo`. It owns half-open byte ranges,
 UTF-8 code-point-boundary validation, and safe slicing. It deliberately does
 not claim grapheme safety; semantic index conversions will build above it.
 
-Mojo 1.0 does not enforce private struct fields. `ByteRange` therefore uses
-underscore-prefixed storage by convention and a normalization-closed
-representation: every possible pair of underlying `Int` values produces
-nonnegative, ordered, representable semantic endpoints through `start()` and
-`end()`. Public behavior never trusts the raw storage values.
+The current experimental `ByteRange` normalizes externally mutated storage into
+a valid-looking range. That behavior is temporary and cannot ship: it silently
+changes invalid state into a different coordinate. MOJI-002R replaces it with
+checked storage whose constructor and every observation revalidate and raise.
+No later mapping or coordinate API may copy the normalization strategy.
 
 Boundary classification accepts `StringSlice`, whose text has already entered
 Mojo's UTF-8 string model. It does not validate arbitrary byte buffers. Moji
@@ -38,10 +38,10 @@ predicate that returns `False` for invalid offsets.
 
 `position.mojo` defines nominal byte, code-point, grapheme, and display-column
 coordinates. They retain only an `Int`, never a borrowed string. Construction
-rejects negative input, and their normalization-closed storage keeps semantic
-values nonnegative even after externally reachable field mutation. Equality and
-ordering accept only the same nominal unit. Cross-unit conversion is deliberately
-absent until the relevant text and width contracts can validate it.
+rejects negative input. Its current post-mutation clamping is also temporary;
+MOJI-002R makes every observation checked and removes trait comparison when the
+trait signature cannot raise. Cross-unit conversion is deliberately absent
+until the relevant text and width contracts can validate it.
 Calling `value()` is an explicit unit-erasure escape hatch; code that extracts an
 `Int` assumes responsibility for preserving its coordinate meaning.
 

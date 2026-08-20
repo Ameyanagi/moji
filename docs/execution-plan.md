@@ -9,7 +9,8 @@ only when their listed prerequisites and acceptance checks are complete.
 Moji v0.1 is a standard-library-only package that lets callers:
 
 1. name and validate UTF-8 byte ranges;
-2. convert among byte, code-point, grapheme, and display-column positions;
+2. convert byte positions to and from code-point and grapheme positions, and
+   independently convert grapheme-boundary bytes to and from display columns;
 3. safely slice text at the requested semantic boundary;
 4. measure terminal display width under a documented Unicode data version; and
 5. map transformed output ranges back to exact source ranges.
@@ -30,6 +31,8 @@ Every work item must satisfy all applicable gates:
 - Generated Unicode data records its version, source URL, license, checksums,
   generator command, and deterministic regeneration check.
 - Optimization does not change the public semantic contract.
+- Constructors and every public observation reject externally corrupted
+  storage; no coordinate or range is silently normalized or clamped.
 
 ## Work stream A — byte and semantic positions
 
@@ -38,8 +41,8 @@ Every work item must satisfy all applicable gates:
 Deliverables:
 
 - `ByteRange` with nonnegative, ordered, half-open endpoints;
-- a normalization-closed representation that preserves those invariants even
-  though Mojo 1.0 does not enforce private struct fields;
+- a temporary normalization-based representation that is explicitly blocked
+  from release by MOJI-002R;
 - UTF-8 code-point-boundary detection for a `StringSlice`;
 - validation against a specific text value; and
 - copying safe slices without exposing unchecked indexing.
@@ -61,10 +64,10 @@ conversion failure behavior without implicit unit mixing. Calling `value()`
 explicitly erases the nominal unit and makes the caller responsible for tracking
 what the resulting `Int` means.
 
-The implemented types reject negative construction, normalize externally
-reachable storage mutation, compare and order only within the same nominal
-unit, and retain no text. Cross-unit conversion is intentionally absent in this
-slice: MOJI-003, MOJI-004, and MOJI-010 will add explicit text-dependent
+The implemented types reject negative construction but currently clamp
+externally reachable negative storage to zero. That temporary behavior does not
+satisfy the release contract. Cross-unit conversion is intentionally absent in
+this slice: MOJI-003, MOJI-004, and MOJI-010 will add explicit text-dependent
 fallible conversions rather than implicit casts.
 
 Acceptance checks:
@@ -74,12 +77,33 @@ Acceptance checks:
   interchangeable in arguments, equality, or ordering;
 - no position type retains a borrowed string.
 
+### MOJI-002R: remove silent normalization — mandatory before release
+
+Prerequisites: MOJI-001 and MOJI-002.
+
+Replace ByteRange and position normalization with storage revalidation on every
+public observation. Invalid mutation raises instead of becoming zero, empty,
+reordered, or saturated. If pinned Mojo comparison traits cannot raise, remove
+their conformance and add checked same-unit equality/ordering methods. Lock the
+same rule into MappingSegment and MappedText before those types land.
+
+Acceptance checks:
+
+- mutate every reachable ByteRange and position field to negative, reversed, or
+  overflow-shaped state and prove every public observation rejects it;
+- prove valid empty ranges and valid endpoints retain their exact values;
+- keep compile-fail unit-mixing fixtures without relying on infallible trait
+  comparison; and
+- block MOJI-003, MOJI-005, both packaged sub-gates, and release until green.
+
 ### MOJI-003: byte/code-point conversion
 
-Prerequisite: MOJI-002.
+Prerequisite: MOJI-002R.
 
 Convert valid byte offsets to code-point indices and back. Reject byte offsets
-inside a code point and indices beyond the final endpoint. Include round-trip
+inside a code point and indices beyond the final endpoint. Convert one valid
+non-final code-point index directly to its exact non-empty ByteRange; reject the
+final endpoint because it does not identify a scalar. Include round-trip
 invariants for representative Unicode fixtures.
 
 ### MOJI-004: grapheme conversion and grapheme-safe slicing
@@ -95,7 +119,7 @@ indicators, and zero-width-joiner sequences.
 
 ### MOJI-005: mapping segment contract
 
-Prerequisite: MOJI-001.
+Prerequisite: MOJI-002R.
 
 Define a segment that associates one nonempty transformed byte range with one
 nonempty source byte range. Decide and document expansion, contraction,
@@ -107,14 +131,19 @@ their respective strings.
 Prerequisite: MOJI-005.
 
 Add a builder that enforces ordered, non-overlapping coverage of transformed
-bytes. Query one transformed offset or range and return exact source ranges;
-do not collapse discontiguous source ranges into a misleading bounding range.
+bytes. Batch-project an immutable collection/view of transformed ranges,
+validating the aggregate and all non-empty members once before output. Accept an
+empty collection and arbitrary member order; globally sort and merge only
+overlap/touch. Never collapse a source gap into a bounding range or return a
+partial result after an error.
 
 Acceptance checks:
 
 - one-to-one, one-to-many, and many-to-one transformations;
 - CJK romanization-shaped fixtures such as `北京` to `beijing`;
-- discontiguous highlighting remains discontiguous; and
+- discontiguous highlighting remains discontiguous;
+- multiple scalar-position ranges merge globally without caller-side mapping
+  logic; and
 - invalid gaps, overlaps, and UTF-8-splitting segments are rejected.
 
 ### MOJI-007: mapped text value
@@ -124,12 +153,14 @@ Prerequisite: MOJI-006.
 Provide the smallest owned value that carries transformed text and its source
 map together. Prove usage in standalone examples and integration fixtures for
 the contracts expected by Yomi and Hibana without depending on either package.
+Expose `text() raises -> String` as a revalidated owned snapshot; a borrowed view
+waits for a separate compiled lifetime design.
 
 ## Work stream C — terminal width
 
 ### MOJI-008: width policy and Unicode data provenance
 
-Prerequisite: none; may proceed alongside work stream B.
+Prerequisite: MOJI-002R; may proceed alongside work stream B.
 
 Specify control-character behavior, ambiguous-width policy, emoji sequence
 handling, Unicode versioning, and table provenance. Review the existing
@@ -140,31 +171,44 @@ Moji's package contract and migration boundary.
 
 Prerequisite: MOJI-008 and MOJI-004.
 
-Implement scalar classification and grapheme/text measurement from generated
-tables. Keep ambiguous-width choice explicit. Add Unicode reference fixtures
-and invariants that text width is the sum of its grapheme widths.
+Implement internal scalar/cluster classification and public one-line
+`text_width()` from generated tables. Keep ambiguous-width choice explicit. Add
+Unicode reference fixtures and invariants that text width is the sum of its
+grapheme widths. Do not export a separate `grapheme_width()` unless downstream
+evidence demonstrates semantics not served by `text_width()`.
 
 ### MOJI-010: display-column conversion
 
-Prerequisite: MOJI-009 and MOJI-002.
+Prerequisite: MOJI-009 and MOJI-002R.
 
-Convert grapheme boundaries to display columns and resolve display columns
-back to boundaries under an explicit snap/reject policy. Cover zero-width and
-double-width clusters and columns inside a wide grapheme.
+Convert grapheme-boundary byte offsets to display columns and resolve display
+columns back to bytes. Rejection is the default when a column has no exact byte
+boundary inside a wide grapheme or has multiple boundaries across zero-width
+graphemes. Named BEFORE chooses the earliest resolving byte boundary and AFTER
+the latest. Cover zero-width and double-width clusters and both ambiguity forms.
 
 ## Work stream D — release proof
 
-### MOJI-011: public API and downstream contract fixtures
+### MOJI-011S: packaged search-coordinate and mapping gate
 
-Prerequisites: MOJI-007 and MOJI-010.
+Prerequisites: MOJI-003 and MOJI-007.
 
-Reduce root exports to the reviewed v0.1 surface. Add examples for safe slicing,
-source highlighting, and display-column layout. Add dependency-free fixtures
-that model MojoTUI, Yomi, and Hibana call sites.
+Review only the coordinate/mapping root exports. Add examples for safe slicing
+and source highlighting plus dependency-free Yomi/Hibana/Yuragi-shaped fixtures.
+Build the package, install it into a clean prefix, and compile a consumer against
+the installed `.mojoc`. Display width is not an entry criterion.
+
+### MOJI-011W: packaged display-width gate
+
+Prerequisites: MOJI-004 and MOJI-010.
+
+Review only the display root exports. Add a display-column example and a
+dependency-free MojoTUI-shaped fixture. Build/install/compile the same clean
+package boundary. Mapping is not an entry criterion.
 
 ### MOJI-012: packaging and supported-target verification
 
-Prerequisite: MOJI-011.
+Prerequisites: MOJI-011S and MOJI-011W.
 
 Run the complete suite on macOS ARM64, Linux x86-64, and Linux ARM64. Build the
 Conda package, install it into a clean prefix, compile a consumer against the
@@ -172,7 +216,8 @@ installed `.mojoc`, and record any platform limitation in compatibility docs.
 
 ## v0.1 definition of done
 
-The milestone is complete only when all twelve work items pass their acceptance
-checks, every public symbol has a semantic-boundary and error contract, the
-package installation smoke test passes on the declared matrix, and at least one
-downstream integration fixture exercises both mapping and display width.
+The milestone is complete only when every mandatory work item and both packaged
+sub-gates pass, every public symbol has a semantic-boundary and error contract,
+and the package installation smoke test passes on the declared matrix. Mapping
+and display width have separate downstream fixtures; no artificial combined
+consumer is required.
