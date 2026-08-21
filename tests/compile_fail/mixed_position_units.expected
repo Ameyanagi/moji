@@ -1,0 +1,2 @@
+invalid call to 'requires_byte_offset'
+cannot be converted from 'CodePointIndex' to 'ByteOffset'

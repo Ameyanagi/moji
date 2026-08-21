@@ -2,10 +2,15 @@
 
 ## v0.1 — Foundation
 
-- implement terminal display width, validated byte ranges, safe slicing, index conversion, and transformed-to-source range mappings.
+- Implement terminal display width, validated byte ranges, safe slicing, index
+  conversion, and transformed-to-source range mappings.
 - Define the smallest useful public API and its invariants.
 - Add unit, reference-value, and property/invariant coverage.
 - Build and test the precompiled package on supported targets.
+
+The ordered, issue-sized work and release gates are maintained in the
+[v0.1 execution plan](execution-plan.md). The roadmap describes release
+outcomes; the execution plan describes how to reach them.
 
 ## v0.2 — Usability
 

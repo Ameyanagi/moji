@@ -1,0 +1,2 @@
+invalid call to '__eq__'
+cannot be converted from 'GraphemeIndex' to 'ByteOffset'

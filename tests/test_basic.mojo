@@ -1,9 +1,9 @@
-from moji._scaffold import scaffold_name
+from moji import ByteRange, slice_text
 from std.testing import TestSuite, assert_equal
 
 
-def test_scaffold_name() raises:
-    assert_equal(scaffold_name(), "moji")
+def test_primary_public_api() raises:
+    assert_equal(slice_text("a界b", ByteRange(1, 4)), "界")
 
 
 def main() raises:

@@ -1,0 +1,2 @@
+invalid call to '__lt__'
+cannot be converted from 'DisplayColumn' to 'CodePointIndex'

@@ -6,11 +6,61 @@ Unicode text, search, and layout primitives for Mojo.
 
 ## Scope
 
-Moji fills application-layer gaps above Mojo's UTF-8 strings without duplicating standard-library grapheme support.
+Moji fills application-layer gaps above Mojo's UTF-8 strings without duplicating
+standard-library grapheme support. It provides terminal display width, validated
+byte ranges, safe slicing, explicit index conversion, and lossless source-range
+mappings.
 
-The first implementation milestone is intentionally narrow: implement terminal display width, validated byte ranges, safe slicing, index conversion, and transformed-to-source range mappings.
 The project is independently installable and does not require any application
 from the wider ecosystem.
+
+## Quick start
+
+Measure mixed CJK and emoji text, then truncate a filename without splitting a
+grapheme cluster:
+
+```mojo
+from moji import (
+    ByteOffset,
+    ByteRange,
+    ColumnSnap,
+    DisplayColumn,
+    byte_offset_at_column,
+    slice_text,
+    text_width,
+)
+
+
+def truncate_filename(text: StringSlice, columns: Int) raises -> String:
+    if text_width(text) <= columns:
+        return String(text)
+    var ellipsis = String("…")
+    var content_columns = max(columns - text_width(ellipsis), 0)
+    var end = byte_offset_at_column(
+        text,
+        DisplayColumn(content_columns),
+        ColumnSnap.FLOOR,
+    )
+    return String(
+        slice_text(text, ByteRange(ByteOffset(0), end)),
+        ellipsis,
+    )
+
+
+def main() raises:
+    var label = String("北京 👨‍👩‍👧‍👦")
+    print("width:", text_width(label))
+
+    var filename = String("2026-北京旅行-家族👨‍👩‍👧‍👦-notes.txt")
+    print(truncate_filename(filename, 20))
+
+    print(slice_text("a北京b", ByteRange(1, 7)))
+```
+
+`text_width()` measures terminal columns per extended grapheme cluster.
+`byte_offset_at_column()` returns a grapheme boundary; `ColumnSnap.FLOOR` snaps a
+column inside a wide cluster to its left edge. `ByteRange` remains half-open,
+and `slice_text()` rejects ranges outside the text or inside UTF-8 code points.
 
 ## Development
 
@@ -34,8 +84,10 @@ The Mojo import is `moji`. The eventual Conda distribution is
 `mojo-moji`. Source lives under `src/moji/`, whose
 `__init__.mojo` defines the package boundary.
 
-The current scaffold includes only an internal smoke marker. Nothing is
-re-exported as a stable public API yet.
+The experimental root API exports nominal byte, code-point, grapheme, and
+display-column coordinates plus range, conversion, grapheme, slicing, and width
+operations. These names are tested but remain subject to change until the first
+release.
 
 ## Repository map
 
@@ -47,7 +99,8 @@ re-exported as a stable public API yet.
 - `conda.recipe/`: local Rattler build recipe
 
 See [the architecture](docs/architecture.md), [design principles](docs/design.md),
-and [roadmap](docs/roadmap.md) before proposing a new dependency or feature.
+[roadmap](docs/roadmap.md), and [v0.1 execution plan](docs/execution-plan.md)
+before proposing a new dependency or feature.
 
 ## License
 
