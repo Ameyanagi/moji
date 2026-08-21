@@ -33,6 +33,11 @@ def test_byte_range_accepts_empty_ranges() raises:
     assert_false(byte_range.contains(3))
 
 
+def test_byte_range_string_and_print_forms() raises:
+    assert_equal(String(ByteRange(1, 4)), "1..4")
+    assert_equal(String(ByteRange(2, 2)), "2..2")
+
+
 def test_byte_range_composes_byte_offsets() raises:
     var byte_range = ByteRange(ByteOffset(2), ByteOffset(5))
     assert_equal(byte_range.start(), 2)

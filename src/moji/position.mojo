@@ -1,5 +1,7 @@
 """Nominal nonnegative coordinate values for text APIs."""
 
+from std.io import Writable, Writer
+
 
 struct _Validated:
     def __init__(out self):
@@ -11,7 +13,7 @@ def _validate_nonnegative(value: Int, unit: String) raises:
         raise Error(String(unit, " must be nonnegative, got ", value))
 
 
-struct ByteOffset(Copyable, Equatable):
+struct ByteOffset(Copyable, Equatable, Writable):
     """A nonnegative UTF-8 byte offset.
 
     This value names a byte coordinate but is not tied to a particular string.
@@ -43,6 +45,32 @@ struct ByteOffset(Copyable, Equatable):
         """Return the nonnegative integer coordinate."""
         return self._value
 
+    def write_to[W: Writer](self, mut writer: W):
+        """Write the bare UTF-8 byte offset."""
+        writer.write(self._value)
+
+    def __add__(self, delta: Int) raises -> Self:
+        """Advance this UTF-8 byte offset by `delta` bytes.
+
+        Raises when the resulting byte offset would be negative.
+        """
+        var result = self._value + delta
+        _validate_nonnegative(result, "byte offset arithmetic result")
+        return Self._from_validated(result)
+
+    def __sub__(self, delta: Int) raises -> Self:
+        """Move this UTF-8 byte offset backward by `delta` bytes.
+
+        Raises when the resulting byte offset would be negative.
+        """
+        var result = self._value - delta
+        _validate_nonnegative(result, "byte offset arithmetic result")
+        return Self._from_validated(result)
+
+    def __sub__(self, other: Self) -> Int:
+        """Return the signed UTF-8 byte difference from `other`."""
+        return self._value - other._value
+
     def __eq__(self, other: Self) -> Bool:
         return self._value == other._value
 
@@ -59,7 +87,7 @@ struct ByteOffset(Copyable, Equatable):
         return self._value >= other._value
 
 
-struct CodePointIndex(Copyable, Equatable):
+struct CodePointIndex(Copyable, Equatable, Writable):
     """A nonnegative index in a sequence of Unicode code points.
 
     This value does not retain or borrow the text whose position it describes.
@@ -90,6 +118,10 @@ struct CodePointIndex(Copyable, Equatable):
         """Return the nonnegative integer coordinate."""
         return self._value
 
+    def write_to[W: Writer](self, mut writer: W):
+        """Write the bare code-point index."""
+        writer.write(self._value)
+
     def __eq__(self, other: Self) -> Bool:
         return self._value == other._value
 
@@ -106,7 +138,7 @@ struct CodePointIndex(Copyable, Equatable):
         return self._value >= other._value
 
 
-struct GraphemeIndex(Copyable, Equatable):
+struct GraphemeIndex(Copyable, Equatable, Writable):
     """A nonnegative index in an extended-grapheme-cluster sequence.
 
     This value does not retain or borrow the text whose position it describes.
@@ -137,6 +169,10 @@ struct GraphemeIndex(Copyable, Equatable):
         """Return the nonnegative integer coordinate."""
         return self._value
 
+    def write_to[W: Writer](self, mut writer: W):
+        """Write the bare grapheme index."""
+        writer.write(self._value)
+
     def __eq__(self, other: Self) -> Bool:
         return self._value == other._value
 
@@ -153,7 +189,7 @@ struct GraphemeIndex(Copyable, Equatable):
         return self._value >= other._value
 
 
-struct DisplayColumn(Copyable, Equatable):
+struct DisplayColumn(Copyable, Equatable, Writable):
     """A nonnegative terminal display-column coordinate.
 
     This value carries no width policy and does not retain or borrow text.
@@ -184,6 +220,32 @@ struct DisplayColumn(Copyable, Equatable):
     def value(self) -> Int:
         """Return the nonnegative integer coordinate."""
         return self._value
+
+    def write_to[W: Writer](self, mut writer: W):
+        """Write the bare terminal display-column coordinate."""
+        writer.write(self._value)
+
+    def __add__(self, delta: Int) raises -> Self:
+        """Advance this terminal display column by `delta` columns.
+
+        Raises when the resulting display column would be negative.
+        """
+        var result = self._value + delta
+        _validate_nonnegative(result, "display column arithmetic result")
+        return Self._from_validated(result)
+
+    def __sub__(self, delta: Int) raises -> Self:
+        """Move this terminal display column backward by `delta` columns.
+
+        Raises when the resulting display column would be negative.
+        """
+        var result = self._value - delta
+        _validate_nonnegative(result, "display column arithmetic result")
+        return Self._from_validated(result)
+
+    def __sub__(self, other: Self) -> Int:
+        """Return the signed terminal-column difference from `other`."""
+        return self._value - other._value
 
     def __eq__(self, other: Self) -> Bool:
         return self._value == other._value

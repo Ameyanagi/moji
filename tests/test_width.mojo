@@ -5,7 +5,7 @@ from moji import (
     scalar_width,
     text_width,
 )
-from std.testing import TestSuite, assert_equal
+from std.testing import TestSuite, assert_equal, assert_raises
 
 
 def _assert_fixture(
@@ -91,6 +91,21 @@ def test_scalar_width_fixtures() raises:
     assert_equal(_first_scalar_width("\x7f", AmbiguousWidth.WIDE), 0)
     assert_equal(_first_scalar_width("̀"), 0)
     assert_equal(_first_scalar_width("̀", AmbiguousWidth.WIDE), 0)
+
+
+def test_scalar_width_accepts_one_code_point_string_slice() raises:
+    assert_equal(scalar_width("h"), 1)
+    assert_equal(scalar_width("京"), 2)
+    assert_equal(scalar_width("§", AmbiguousWidth.WIDE), 2)
+
+
+def test_scalar_width_rejects_non_scalar_string_slices() raises:
+    with assert_raises(contains="scalar_width expects exactly one code point, got 0"):
+        _ = scalar_width("")
+    with assert_raises(contains="scalar_width expects exactly one code point, got 3"):
+        _ = scalar_width("abc")
+    with assert_raises(contains="scalar_width expects exactly one code point, got 2"):
+        _ = scalar_width("é")
 
 
 def test_flag_grapheme_width() raises:

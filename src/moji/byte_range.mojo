@@ -1,5 +1,7 @@
 """Validated byte ranges and UTF-8-boundary-safe slicing."""
 
+from std.io import Writable, Writer
+
 from .position import ByteOffset
 
 
@@ -8,7 +10,7 @@ struct _Validated:
         pass
 
 
-struct ByteRange(Copyable, Equatable, ImplicitlyCopyable):
+struct ByteRange(Copyable, Equatable, ImplicitlyCopyable, Writable):
     """A validated half-open range of byte offsets.
 
     `start()` is inclusive and `end()` is exclusive. Construction establishes
@@ -114,6 +116,10 @@ struct ByteRange(Copyable, Equatable, ImplicitlyCopyable):
     def end(self) -> Int:
         """Return the exclusive byte offset."""
         return self._end
+
+    def write_to[W: Writer](self, mut writer: W):
+        """Write the half-open byte range as `start..end`."""
+        writer.write(self._start, "..", self._end)
 
     def __eq__(self, other: Self) -> Bool:
         return self._start == other._start and self._end == other._end

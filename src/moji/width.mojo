@@ -52,6 +52,24 @@ def scalar_width(
     return 1
 
 
+def scalar_width(
+    text: StringSlice, ambiguous: AmbiguousWidth = AmbiguousWidth.NARROW
+) raises -> Int:
+    """Return the terminal-column width of exactly one Unicode code point.
+
+    Raises when `text` contains zero or more than one Unicode code point.
+    """
+    var count = 0
+    var width = 0
+    for scalar in text.codepoints():
+        count += 1
+        if count == 1:
+            width = scalar_width(scalar, ambiguous)
+    if count != 1:
+        raise Error(String("scalar_width expects exactly one code point, got ", count))
+    return width
+
+
 def grapheme_width(
     grapheme: StringSlice, ambiguous: AmbiguousWidth = AmbiguousWidth.NARROW
 ) -> Int:
