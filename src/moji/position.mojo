@@ -8,7 +8,7 @@ struct _Validated:
 
 def _validate_nonnegative(value: Int, unit: String) raises:
     if value < 0:
-        raise Error(unit + " must be nonnegative")
+        raise Error(String(unit, " must be nonnegative, got ", value))
 
 
 struct ByteOffset(Copyable, Equatable):

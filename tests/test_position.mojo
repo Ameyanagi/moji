@@ -69,36 +69,36 @@ def test_validate_rejects_mutated_position_storage() raises:
     var byte_offset = ByteOffset(4)
     byte_offset._value = -1
     assert_true(byte_offset.value() == -1)
-    with assert_raises(contains="byte offset must be nonnegative"):
+    with assert_raises(contains="byte offset must be nonnegative, got -1"):
         byte_offset.validate()
 
     var codepoint_index = CodePointIndex(4)
     codepoint_index._value = -1
     assert_true(codepoint_index.value() == -1)
-    with assert_raises(contains="code-point index must be nonnegative"):
+    with assert_raises(contains="code-point index must be nonnegative, got -1"):
         codepoint_index.validate()
 
     var grapheme_index = GraphemeIndex(4)
     grapheme_index._value = -1
     assert_true(grapheme_index.value() == -1)
-    with assert_raises(contains="grapheme index must be nonnegative"):
+    with assert_raises(contains="grapheme index must be nonnegative, got -1"):
         grapheme_index.validate()
 
     var display_column = DisplayColumn(4)
     display_column._value = -1
     assert_true(display_column.value() == -1)
-    with assert_raises(contains="display column must be nonnegative"):
+    with assert_raises(contains="display column must be nonnegative, got -1"):
         display_column.validate()
 
 
 def test_negative_positions_are_rejected() raises:
-    with assert_raises(contains="byte offset must be nonnegative"):
+    with assert_raises(contains="byte offset must be nonnegative, got -1"):
         _ = ByteOffset(-1)
-    with assert_raises(contains="code-point index must be nonnegative"):
+    with assert_raises(contains="code-point index must be nonnegative, got -1"):
         _ = CodePointIndex(-1)
-    with assert_raises(contains="grapheme index must be nonnegative"):
+    with assert_raises(contains="grapheme index must be nonnegative, got -1"):
         _ = GraphemeIndex(-1)
-    with assert_raises(contains="display column must be nonnegative"):
+    with assert_raises(contains="display column must be nonnegative, got -1"):
         _ = DisplayColumn(-1)
 
 

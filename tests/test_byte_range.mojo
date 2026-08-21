@@ -43,26 +43,26 @@ def test_byte_range_validate_rejects_mutated_storage() raises:
     var byte_range = ByteRange(2, 5)
     byte_range._start = -1
     assert_equal(byte_range.start(), -1)
-    with assert_raises(contains="byte range start must be nonnegative"):
+    with assert_raises(contains="byte range start must be nonnegative, got -1"):
         byte_range.validate()
 
     byte_range._start = 2
     byte_range._end = 1
     assert_equal(byte_range.end(), 1)
-    with assert_raises(contains="byte range end must not precede start"):
+    with assert_raises(contains="byte range end 1 must not precede start 2"):
         byte_range.validate()
 
 
 def test_byte_range_rejects_negative_start() raises:
-    with assert_raises(contains="byte range start must be nonnegative"):
+    with assert_raises(contains="byte range start must be nonnegative, got -1"):
         _ = ByteRange(-1, 0)
 
 
 def test_byte_range_rejects_reversed_endpoints() raises:
-    with assert_raises(contains="byte range end must not precede start"):
+    with assert_raises(contains="byte range end 1 must not precede start 2"):
         _ = ByteRange(2, 1)
 
-    with assert_raises(contains="byte range end must not precede start"):
+    with assert_raises(contains="byte range end 1 must not precede start 2"):
         _ = ByteRange(ByteOffset(2), ByteOffset(1))
 
 
@@ -187,7 +187,7 @@ def test_safe_slice_handles_ascii_cjk_and_emoji() raises:
 
 
 def test_safe_slice_rejects_out_of_bounds_range() raises:
-    with assert_raises(contains="byte range is outside the text"):
+    with assert_raises(contains="byte range end 4 is outside text byte length 3"):
         _ = slice_text("abc", ByteRange(0, 4))
 
 
