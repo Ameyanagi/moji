@@ -1,6 +1,6 @@
 # Moji
 
-> **Experimental — API not yet released.**
+> **Experimental — the 0.x API may change before v1.0.**
 
 Unicode text, search, and layout primitives for Mojo.
 
@@ -16,10 +16,21 @@ from the wider ecosystem.
 
 ## Install
 
-For a Pixi project, add the hosted channel and install the Conda package:
+For a Pixi project, list the ecosystem channel first, followed by Modular's
+Mojo channel and conda-forge:
+
+```toml
+[workspace]
+channels = [
+    "https://ameyanagi.github.io/mojo-channel",
+    "https://conda.modular.com/max",
+    "conda-forge",
+]
+```
+
+Then install the Conda package:
 
 ```sh
-pixi project channel add https://ameyanagi.github.io/mojo-channel
 pixi add mojo-moji
 ```
 
@@ -135,8 +146,8 @@ package boundary.
 
 The experimental root API exports nominal byte, code-point, grapheme, and
 display-column coordinates plus range, conversion, grapheme, slicing, and width
-operations. These names are tested but remain subject to change until the first
-release.
+operations. These names are tested but may change between minor releases in the
+experimental `0.x` series.
 
 ## Repository map
 
