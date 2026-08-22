@@ -6,12 +6,15 @@ platforms = ["osx-arm64", "linux-64", "linux-aarch64"]
 version = "0.0.0"
 
 [tasks]
+benchmark-text = { cmd = ".pixi/bench-text-index", depends-on = ["benchmark-text-build"], description = "Run repeated text indexing and width benchmarks" }
+benchmark-text-build = { cmd = "mojo build -I src -O3 benchmarks/bench_text_index.mojo -o .pixi/bench-text-index", description = "Build the optimized text benchmark" }
 check = { depends-on = ["format-check", "readme-check", "test", "precompile"], description = "Run the complete validation suite" }
 example = { cmd = "mojo run -I src examples/basic.mojo", description = "Run the structural smoke example" }
 format = { cmd = "bash scripts/format.sh", description = "Format Mojo source files" }
 format-check = { cmd = "bash scripts/check-format.sh", description = "Verify Mojo formatting without modifying source" }
 package = { cmd = "rattler-build build --recipe conda.recipe/recipe.yaml -c conda-forge -c https://conda.modular.com/max -c https://repo.prefix.dev/modular-community", description = "Build the local Conda package" }
 precompile = { cmd = "mojo precompile --Werror --warn-on-unstable-apis src/moji -o .pixi/moji.mojoc", description = "Precompile the package with warnings as errors" }
+profile-text-build = { cmd = "mojo build -I src -O3 -g1 benchmarks/profile_text.mojo -o .pixi/profile-text", description = "Build the text sampling-profiler workloads" }
 readme-check = { cmd = "bash scripts/check-readme.sh", description = "Compile the README's fenced Mojo blocks" }
 test = { cmd = "bash scripts/test.sh", description = "Run all Mojo TestSuite files" }
 

@@ -91,6 +91,26 @@ def main() raises:
 `ColumnSnap.REJECT` raises instead of snapping. `ByteRange` remains half-open,
 and `slice_text()` rejects ranges outside the text or inside UTF-8 code points.
 
+For repeated scalar-coordinate lookups, build an owned index once:
+
+```mojo
+from moji import ByteOffset, CodePointIndex, TextIndex
+
+
+def main() raises:
+    var index = TextIndex("a北京b")
+    print(index.byte_offset(CodePointIndex(3)))
+    print(index.code_point_index(ByteOffset(7)))
+```
+
+`TextIndex` preserves the one-off conversion contracts while avoiding a UTF-8
+rescan per lookup. Non-ASCII text uses an endpoint table; ASCII uses identity
+byte/code-point coordinates without retaining that table. `MappedText` adds one
+validated source `ByteRange` per transformed scalar for exact expansion,
+contraction, reordered, and discontiguous source highlighting. See
+`examples/index_and_map.mojo` for the complete mapping shape. Matcher-produced
+scalar positions map directly through `MappedText.source_ranges_of_code_points()`.
+
 ## Development
 
 Install [Pixi](https://pixi.sh/), then run:
