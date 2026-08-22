@@ -16,6 +16,32 @@ install an application, renderer, language layer, or scientific stack.
 
 Planned implementation areas: width, boundary, index, slice, mapping, text-view, and property adapters built on Mojo 1.0 grapheme iteration.
 
+`TextIndex` is the opt-in owned path for repeated scalar-coordinate queries. It
+scans UTF-8 once and retains boundary offsets only when the text is non-ASCII;
+ASCII byte offsets and code-point indices are identical, so that path retains
+no offset table. The existing free conversion functions remain appropriate for
+one-off queries and keep their original contracts. The index does not cache
+grapheme segmentation or terminal width, because those policies are separate
+from Unicode scalar boundaries.
+
+`MappedText` owns source text, a `TextIndex` for transformed text, and one exact
+nonempty source byte range for every transformed scalar. Repeated source ranges
+model expansion, wider ranges model contraction, and reordered ranges remain in
+transformed encounter order. A query merges only overlapping or touching source
+ranges. It never bridges an unrepresented byte gap, so discontiguous highlights
+stay discontiguous. After merging, union components are ordered by the earliest
+selected transformed position contributing to each component.
+
+Exact-union construction has an amortized O(k) path for the usual monotonic k
+source mappings: it appends after or merges backward from the final component.
+The first backwards discontiguous mapping switches that query to a general
+encounter-order scan for fewer than 64 selected mappings. At 64 or more it uses
+an O(k log k) heap-sort/sweep with O(k) temporary storage, then emits components
+by their earliest contributing ordinal. The bounded small scan avoids auxiliary
+sort storage where it is not measured to help. The benchmark suite keeps
+realistic CJK expansion, the 63/64 crossover, and larger adversarial cases
+separate so this policy remains measured.
+
 The first implemented layer is `byte_range.mojo`. It owns half-open byte ranges,
 UTF-8 code-point-boundary validation, and safe slicing. It deliberately does
 not claim grapheme safety; semantic index conversions will build above it.

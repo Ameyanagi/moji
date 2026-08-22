@@ -1,5 +1,7 @@
 """Validated byte ranges and UTF-8-boundary-safe slicing."""
 
+from std.io import Writable, Writer
+
 from .position import ByteOffset
 
 
@@ -8,7 +10,7 @@ struct _Validated:
         pass
 
 
-struct ByteRange(Copyable, Equatable, ImplicitlyCopyable):
+struct ByteRange(Copyable, Equatable, ImplicitlyCopyable, Writable):
     """A validated half-open range of byte offsets.
 
     `start()` is inclusive and `end()` is exclusive. Construction establishes
@@ -24,9 +26,11 @@ struct ByteRange(Copyable, Equatable, ImplicitlyCopyable):
 
     def __init__(out self, start: Int, end: Int) raises:
         if start < 0:
-            raise Error("byte range start must be nonnegative")
+            raise Error(String("byte range start must be nonnegative, got ", start))
         if end < start:
-            raise Error("byte range end must not precede start")
+            raise Error(
+                String("byte range end ", end, " must not precede start ", start)
+            )
         self._start = start
         self._end = end
 
@@ -34,7 +38,14 @@ struct ByteRange(Copyable, Equatable, ImplicitlyCopyable):
         var start_value = start.value()
         var end_value = end.value()
         if end_value < start_value:
-            raise Error("byte range end must not precede start")
+            raise Error(
+                String(
+                    "byte range end ",
+                    end_value,
+                    " must not precede start ",
+                    start_value,
+                )
+            )
         self._start = start_value
         self._end = end_value
 
@@ -85,9 +96,18 @@ struct ByteRange(Copyable, Equatable, ImplicitlyCopyable):
     def validate(self) raises:
         """Validate the stored endpoints explicitly."""
         if self._start < 0:
-            raise Error("byte range start must be nonnegative")
+            raise Error(
+                String("byte range start must be nonnegative, got ", self._start)
+            )
         if self._end < self._start:
-            raise Error("byte range end must not precede start")
+            raise Error(
+                String(
+                    "byte range end ",
+                    self._end,
+                    " must not precede start ",
+                    self._start,
+                )
+            )
 
     def start(self) -> Int:
         """Return the inclusive byte offset."""
@@ -96,6 +116,10 @@ struct ByteRange(Copyable, Equatable, ImplicitlyCopyable):
     def end(self) -> Int:
         """Return the exclusive byte offset."""
         return self._end
+
+    def write_to[W: Writer](self, mut writer: W):
+        """Write the half-open byte range as `start..end`."""
+        writer.write(self._start, "..", self._end)
 
     def __eq__(self, other: Self) -> Bool:
         return self._start == other._start and self._end == other._end
@@ -219,7 +243,14 @@ def validate_text_range(text: StringSlice, byte_range: ByteRange) raises:
     at the UTF-8 storage layer even when it is unsuitable for presentation.
     """
     if byte_range.end() > text.byte_length():
-        raise Error("byte range is outside the text")
+        raise Error(
+            String(
+                "byte range end ",
+                byte_range.end(),
+                " is outside text byte length ",
+                text.byte_length(),
+            )
+        )
     if not is_utf8_boundary(text, byte_range.start()):
         raise Error(_utf8_boundary_error_message(text, byte_range.start()))
     if not is_utf8_boundary(text, byte_range.end()):

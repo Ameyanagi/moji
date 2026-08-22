@@ -28,6 +28,7 @@ from .grapheme import (
     slice_graphemes,
 )
 from .position import ByteOffset, CodePointIndex, DisplayColumn, GraphemeIndex
+from .text_index import MappedText, TextIndex
 from .width import (
     UNICODE_DATA_VERSION,
     AmbiguousWidth,
