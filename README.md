@@ -1,6 +1,6 @@
 # Moji
 
-> **Experimental — API not yet released.**
+> **Experimental — the 0.x API may change before v1.0.**
 
 Unicode text, search, and layout primitives for Mojo.
 
@@ -135,8 +135,8 @@ package boundary.
 
 The experimental root API exports nominal byte, code-point, grapheme, and
 display-column coordinates plus range, conversion, grapheme, slicing, and width
-operations. These names are tested but remain subject to change until the first
-release.
+operations. These names are tested but may change between minor releases in the
+experimental `0.x` series.
 
 ## Repository map
 
