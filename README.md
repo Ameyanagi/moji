@@ -16,10 +16,21 @@ from the wider ecosystem.
 
 ## Install
 
-For a Pixi project, add the hosted channel and install the Conda package:
+For a Pixi project, list the ecosystem channel first, followed by Modular's
+Mojo channel and conda-forge:
+
+```toml
+[workspace]
+channels = [
+    "https://ameyanagi.github.io/mojo-channel",
+    "https://conda.modular.com/max",
+    "conda-forge",
+]
+```
+
+Then install the Conda package:
 
 ```sh
-pixi project channel add https://ameyanagi.github.io/mojo-channel
 pixi add mojo-moji
 ```
 
