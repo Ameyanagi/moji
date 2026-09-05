@@ -122,6 +122,31 @@ contraction, reordered, and discontiguous source highlighting. See
 `examples/index_and_map.mojo` for the complete mapping shape. Matcher-produced
 scalar positions map directly through `MappedText.source_ranges_of_code_points()`.
 
+For repeated editor cursor lookups, cache grapheme boundaries:
+
+```mojo
+from moji import ByteOffset, GraphemeBoundaryIndex, GraphemeIndex
+
+
+def main() raises:
+    var text = String("aé🇯🇵z")
+    var index = GraphemeBoundaryIndex(text^)
+    print(index.byte_offset(GraphemeIndex(2)))  # byte 4, before the flag
+    print(index.grapheme_index(ByteOffset(12)))  # cluster 3, after the flag
+    print(index.slice(GraphemeIndex(1), GraphemeIndex(3)))  # borrowed é🇯🇵
+```
+
+`GraphemeBoundaryIndex` owns immutable text. Construction is O(bytes) and stores
+one integer per cluster boundary; cluster-to-byte and range queries are O(1),
+and exact byte-to-cluster lookup is O(log clusters). The final endpoint is valid.
+`text()` and `slice()` borrow from the index without copying; wrap a view in
+`String(...)` when an owned copy is needed. Transfer an existing string with `^`
+to avoid a construction-time copy. Build a new index after editing text; changes
+to another string cannot invalidate an existing index. Use `grapheme_spans()`
+for a borrowed one-pass traversal without retained index storage. See the
+[segmentation compatibility profile](docs/compatibility.md#grapheme-segmentation)
+and [cursor benchmark](benchmarks/README.md#grapheme-cursor-index).
+
 ## Development
 
 Install [Pixi](https://pixi.sh/), then run:

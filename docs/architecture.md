@@ -2,6 +2,16 @@
 
 Moji owns Unicode application text views, terminal width, safe indexing, and lossless transformed-to-source mappings.
 
+`GraphemeBoundaryIndex` adds an immutable ownership boundary for repeated cursor
+queries. It moves or copies a `String` once and stores start/end byte offsets
+from the same standard-library segmentation as `grapheme_spans`. Borrowed
+streaming callers retain the existing iterator. The owned value has no mutation
+API: reconstruct after an edit, and borrow `text()` / `slice()` for zero-copy
+views. Offset and range reads trust construction; `validate()` is an explicit
+O(bytes) checkpoint for unusual direct access to underscore fields. Exact
+byte-to-cluster conversion uses lower-bound search and rejects interior bytes
+with the same nearest-boundary diagnostic as the scalar reference.
+
 ## Dependency boundary
 
 Allowed ecosystem dependencies: Mojo standard library only.
