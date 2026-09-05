@@ -124,6 +124,9 @@ scalar positions map directly through `MappedText.source_ranges_of_code_points()
 
 For repeated editor cursor lookups, cache grapheme boundaries:
 
+`GraphemeBoundaryIndex` is **unreleased and available from the current source
+checkout**. The published `mojo-moji==0.1.0` package does not include this API.
+
 ```mojo
 from moji import ByteOffset, GraphemeBoundaryIndex, GraphemeIndex
 
@@ -134,6 +137,12 @@ def main() raises:
     print(index.byte_offset(GraphemeIndex(2)))  # byte 4, before the flag
     print(index.grapheme_index(ByteOffset(12)))  # cluster 3, after the flag
     print(index.slice(GraphemeIndex(1), GraphemeIndex(3)))  # borrowed é🇯🇵
+```
+
+Save this example as `grapheme_cursor.mojo` in the source checkout and run:
+
+```sh
+pixi run --locked mojo run -I src grapheme_cursor.mojo
 ```
 
 `GraphemeBoundaryIndex` owns immutable text. Construction is O(bytes) and stores
