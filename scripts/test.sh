@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+python3 scripts/check-grapheme-fixture.py
+
 for test_file in tests/test_*.mojo; do
   mojo run -I src "$test_file"
 done
