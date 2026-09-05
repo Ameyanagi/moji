@@ -18,3 +18,7 @@
 The tag workflow creates a source archive after the supported check and package
 matrix passes. Publishing to modular-community remains a separate reviewed
 operation.
+
+Compiler upgrades additionally require the mandatory Unicode grapheme corpus
+gate and explicit review of its exact compatibility exceptions on all three
+platforms. See [the segmentation upgrade contract](compatibility.md#grapheme-segmentation).

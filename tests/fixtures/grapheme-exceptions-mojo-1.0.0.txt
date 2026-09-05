@@ -1,0 +1,12 @@
+# Exact Mojo 1.0.0 compatibility exceptions against Unicode 17.0.0.
+# These are upstream version mismatches, not locale or terminal tailoring.
+# Official fixture line;observed UTF-8 boundaries;reason
+771;0,9;U+2701 ZWJ U+2701 remains joined by the pinned compiler, while Unicode 17.0.0 expects a break before the final U+2701.
+785;0,6,9,15;The pinned compiler breaks the Myanmar conjunct where Unicode 17.0.0 applies GB9c (InCB linker/consonant properties).
+786;0,9,15,18;The pinned compiler breaks the Myanmar conjunct where Unicode 17.0.0 applies GB9c (InCB linker/consonant properties).
+787;0,6,12,15,21,27,30,36,42;The pinned compiler breaks the Balinese conjunct where Unicode 17.0.0 applies GB9c (InCB linker/consonant properties).
+788;0,6,12,18;The pinned compiler breaks the Khmer conjunct where Unicode 17.0.0 applies GB9c (InCB linker/consonant properties).
+789;0,3,9,12;The pinned compiler breaks the Balinese conjunct where Unicode 17.0.0 applies GB9c (InCB linker/consonant properties).
+790;0,3,9,12,18;The pinned compiler breaks the Balinese conjunct where Unicode 17.0.0 applies GB9c (InCB linker/consonant properties).
+791;0,6,9,12;The pinned compiler breaks the Khmer conjunct where Unicode 17.0.0 applies GB9c (InCB linker/consonant properties).
+792;0,6,9,15,18;The pinned compiler breaks the Khmer conjunct where Unicode 17.0.0 applies GB9c (InCB linker/consonant properties).

@@ -1,5 +1,39 @@
 # Text indexing benchmarks and profiles
 
+## Grapheme cursor index
+
+Run `pixi run --locked benchmark-graphemes`. The checked-in
+`bench_grapheme_index.mojo` builds at `-O3` and compares repeated existing
+`byte_range_of_grapheme` / `grapheme_index` scans with the new
+`GraphemeBoundaryIndex` on identical deterministic cursor positions. Each sample
+performs 64 positions × 8 batches × 2 coordinate conversions (1,024 lookups).
+Both paths check the same observable checksum. Construction is measured
+separately, including retained boundary storage; consuming the complete index
+prevents the optimizer from dropping its construction.
+
+CJK input repeats `北京東京`; emoji input repeats `é🇯🇵👨‍👩‍👧‍👦👍🏽`. Small inputs
+repeat four times (16 clusters); long inputs repeat 1,024 times (4,096 clusters).
+Queries use `(query * 811 + 17) % cluster_count`. Each case gets three warmups
+and 31 samples with nearest-rank p50/p95 (samples 16 and 30).
+
+Measured 2026-09-05 on Apple M4, macOS 26.5.1 (25F80), Mojo 1.0.0, `-O3`:
+
+| Input | UTF-8 bytes | Build p50 / p95 | Reference lookups p50 / p95 | Indexed lookups p50 / p95 |
+| --- | ---: | ---: | ---: | ---: |
+| CJK, 16 clusters | 48 | 3 / 8 µs | 0.801 / 1.498 ms | 9 / 16 µs |
+| Emoji, 16 clusters | 176 | 9 / 13 µs | 3.092 / 3.717 ms | 13 / 17 µs |
+| CJK, 4,096 clusters | 12,288 | 355 / 644 µs | 214.574 / 291.752 ms | 30 / 45 µs |
+| Emoji, 4,096 clusters | 45,056 | 1,466 / 2,511 µs | 871.350 / 1,365.827 ms | 34 / 59 µs |
+
+This shared development host was also running other repository checks, so the
+table is reproducible methodology and observed evidence, not a latency promise.
+The fast path replaces repeated segmentation with cached integer boundaries;
+it uses no SIMD, unsafe byte access, or architecture-specific code. Keep the
+borrowed streaming iterator for one-pass work, where retaining O(clusters)
+boundary storage brings no reuse benefit.
+
+## Scalar index and source mapping
+
 `bench_text_index.mojo` measures index construction, 1,024 repeated coordinate
 lookups, one terminal-width pass, and transformed-to-source matcher mapping. Its
 generated fixtures are deterministic: 6,144 mixed Unicode scalars (ASCII, CJK,

@@ -3,7 +3,9 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: '^tests/fixtures/unicode-17\.0\.0/'
       - id: end-of-file-fixer
+        exclude: '^tests/fixtures/unicode-17\.0\.0/'
       - id: check-yaml
       - id: check-toml
   - repo: local

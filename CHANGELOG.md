@@ -5,6 +5,16 @@ and uses semantic versioning.
 
 ## [Unreleased]
 
+### Added
+
+- `GraphemeBoundaryIndex` for owned immutable text with O(1) cluster-to-byte
+  and range lookup, O(log n) exact byte-to-cluster conversion, and borrowed
+  text/slice views. Existing streaming segmentation remains unchanged.
+- Mandatory Unicode 17.0.0 GraphemeBreakTest coverage for all public grapheme
+  operations, with pinned fixture/license bytes and nine exact, documented
+  Mojo 1.0.0 compatibility exceptions.
+- Reproducible small/long CJK and emoji cursor lookup benchmarks.
+
 ## [0.1.0] - 2026-08-22
 
 ### Added

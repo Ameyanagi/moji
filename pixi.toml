@@ -6,6 +6,8 @@ platforms = ["osx-arm64", "linux-64", "linux-aarch64"]
 version = "0.1.0"
 
 [tasks]
+benchmark-graphemes = { cmd = ".pixi/bench-grapheme-index", depends-on = ["benchmark-graphemes-build"], description = "Measure owned grapheme indexing and repeated cursor lookups" }
+benchmark-graphemes-build = { cmd = "mojo build -I src -O3 benchmarks/bench_grapheme_index.mojo -o .pixi/bench-grapheme-index", description = "Build the optimized grapheme index benchmark" }
 benchmark-text = { cmd = ".pixi/bench-text-index", depends-on = ["benchmark-text-build"], description = "Run repeated text indexing and width benchmarks" }
 benchmark-text-build = { cmd = "mojo build -I src -O3 benchmarks/bench_text_index.mojo -o .pixi/bench-text-index", description = "Build the optimized text benchmark" }
 check = { depends-on = ["format-check", "readme-check", "test", "precompile"], description = "Run the complete validation suite" }

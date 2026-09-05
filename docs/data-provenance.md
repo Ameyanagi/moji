@@ -1,5 +1,28 @@
 # Data provenance
 
+## Grapheme conformance fixture
+
+The verbatim official corpus is vendored under
+[`tests/fixtures/unicode-17.0.0/`](../tests/fixtures/unicode-17.0.0/).
+
+| File | Source | SHA-256 |
+| --- | --- | --- |
+| `GraphemeBreakTest.txt` | [Unicode 17.0.0 UCD](https://www.unicode.org/Public/17.0.0/ucd/auxiliary/GraphemeBreakTest.txt) | `e2d134d2c52919bace503ebb6a551c1855fe1a1faec18478c78fff254a1793ec` |
+| `LICENSE.txt` | [Unicode License V3](https://www.unicode.org/license.txt), retrieved 2026-09-05 | `e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96` |
+
+The corpus contains 766 default grapheme-boundary cases and retains the Unicode
+copyright header. The adjacent license is distributed with the unmodified
+data. `scripts/check-grapheme-fixture.py` verifies both files offline before
+the normal test suite; whitespace hooks exclude these byte-exact upstream files.
+Test execution needs no network or generated source.
+
+To update, retrieve the chosen version's official UCD file and license into a
+new versioned fixture directory. Review the upstream changes and licensing,
+update checksums and expected case count, then run the complete test suite.
+Review every compiler exception described in
+[compatibility](compatibility.md#grapheme-segmentation); never change expected
+boundaries simply to make an upgrade pass.
+
 ## Unicode terminal-width tables
 
 [`src/moji/_unicode_width_data.mojo`](../src/moji/_unicode_width_data.mojo) is a
